@@ -1,0 +1,469 @@
+function AnalogModuleStreamer()
+
+global AnalogModuleStreamer
+
+% Here fix!!
+%AnalogModule;
+
+%Initialize AnalogModuleStreamer object
+AnalogModuleStreamer.Signal.T=0;
+AnalogModuleStreamer.Signal.TimerPeriod = 0.1; % in seconds
+AnalogModuleStreamer.Signal.TimeWindow = 5; % in seconds
+AnalogModuleStreamer.Signal.SelectedChannel = 0;
+AnalogModuleStreamer.Signal.SelectedRange = 1;
+AnalogModuleStreamer.Signal.Running = 0;
+
+
+AnalogModuleStreamer.Events.T=0;
+AnalogModuleStreamer.Events.TimeWindow = 5; % in seconds
+AnalogModuleStreamer.Events.TimerPeriod = 0.1; % in seconds
+AnalogModuleStreamer.Events.Running = 0;
+
+AnalogModuleStreamer.Figure = figure('Name','AnalogModule Streamer',...
+                                     'NumberTitle','off',...
+                                     'MenuBar','none',...
+                                     'Color','k',...
+                                     'Position',[3200,200,1500,700]);
+
+tabgp = uitabgroup('Position',[0,0,1,1],'SelectionChangedFcn',{@TabChange_Callback});
+Signal_tab = uitab(tabgp,'Title','Signal','BackgroundColor',0.52*[1 1 1]);
+Event_tab = uitab(tabgp,'Title','Events','BackgroundColor',0.52*[1 1 1]);
+
+AnalogModuleStreamer.Signal.Axis = axes('parent', Signal_tab,...
+                                            'Position',[.05,.07,.6,.85],...
+                                            'FontSize',14,...
+                                            'Color','k'); 
+                                         
+AnalogModuleStreamer.Signal.Axis.GridColor = [1 1 1];
+grid(AnalogModuleStreamer.Signal.Axis,'on')                                                                              
+                                        
+AnalogModuleStreamer.Signal.Plot = line([0],[0],...
+                                   'Parent',AnalogModuleStreamer.Signal.Axis,...
+                                   'Color',[1 1 0],...
+                                   'LineWidth',2);
+                               
+Start_btn = uicontrol('Parent', Signal_tab,'Style', 'pushbutton',...
+                      'String', 'Start',...
+                      'Units','normalized','Position', [0.68 0.07 0.1 0.09],...
+                      'FontSize',14,'Callback', {@SignalStart_btn_Callback});
+
+Stop_btn = uicontrol('Parent', Signal_tab,'Style', 'pushbutton',...
+                     'String', 'Stop',...
+                     'Units','normalized','Position', [0.8 0.07 0.1 0.09],...
+                     'FontSize',14,'Callback', {@SignalStop_btn_Callback});
+
+Channel_bg = uibuttongroup('Parent', Signal_tab,'Title','Channel',...
+                           'BackgroundColor',0.52*[1 1 1],...
+                           'Position',[0.68 0.25 0.1 0.455],...
+                           'SelectionChangedFcn',{@Channel_bg_Callback});
+       
+PosY = 0.9;
+for i=1:8
+    PosY = PosY -0.1;
+    Channel_bn(i) = uicontrol(Channel_bg,'Style',...
+                              'radiobutton',...
+                              'BackgroundColor',0.52*[1 1 1],...
+                              'String',['Channel ' num2str(i-1)],...
+                              'Units','normalized',...
+                              'Position',[0.1 PosY 0.8 0.12]);
+end
+
+Range_bg = uibuttongroup('Parent', Signal_tab,'Title','Range',...
+                         'Position',[0.79 0.4 0.11 0.3],...
+                         'BackgroundColor',0.52*[1 1 1],...
+                  'SelectionChangedFcn',{@Range_bg_Callback});
+   
+Range_str = {'0V - 10V', '-2.5V - 2.5V', '-5V - 5V', '-10V - 10V'};
+
+PosY = 0.9;
+for i=1:4
+    PosY = PosY -0.15;
+    Range_bn(i) = uicontrol(Range_bg,'Style',...
+                              'radiobutton',...
+                              'BackgroundColor',0.52*[1 1 1],...
+                              'String',Range_str{i},...
+                              'Units','normalized',...
+                              'Position',[0.1 PosY 0.8 0.12]);
+end
+
+Win_txt = uicontrol('Parent', Signal_tab,'Style', 'text',...
+                     'String', 'TimeWin',...
+                     'Units','normalized',...
+                     'Position', [0.785 0.287 0.07 0.06],...
+                     'BackgroundColor',0.52*[1 1 1],...
+                     'FontSize',11);
+                 
+Win_edt = uicontrol('Parent', Signal_tab,'Style', 'edit',...
+                     'String', '5',...
+                     'Units','normalized',...
+                     'Position', [0.85 0.31 0.03 0.045],...
+                     'FontSize',11,'Callback', {@Win_edt_Callback});
+                 
+AnalogModuleStreamer.handles.Value_txt = uicontrol('Parent', Signal_tab,'Style', 'text',...
+                     'String', '-.-',...
+                     'Units','normalized',...
+                     'Position', [0.68 0.76 0.22 0.16],...
+                     'ForegroundColor',[1 1 0],...    
+                     'BackgroundColor',[0 0 0],...
+                     'FontSize',40);
+                 
+                 
+%Events tab
+AnalogModuleStreamer.Events.Axis = axes('parent', Event_tab,...
+                                            'Position',[.05,.07,.6,.85],...
+                                            'FontSize',14,...
+                                            'Color','k'); 
+                                         
+AnalogModuleStreamer.Events.Axis.GridColor = [1 1 1];
+grid(AnalogModuleStreamer.Events.Axis,'on');                                                                           
+                                        
+for i=1:8
+    AnalogModuleStreamer.Events.Plot(i) = line([0],[0],...
+                                   'Parent',AnalogModuleStreamer.Events.Axis,...
+                                   'LineStyle','none',...
+                                   'MarkerFaceColor',[1 1 0],...
+                                   'MarkerEdgeColor',[1 1 0],...
+                                   'Marker','.','MarkerSize',10);
+end
+
+                               
+Start_btn = uicontrol('Parent', Event_tab,'Style', 'pushbutton',...
+                      'String', 'Start',...
+                      'Units','normalized','Position', [0.68 0.07 0.1 0.09],...
+                      'FontSize',14,'Callback', {@EventsStart_btn_Callback});
+
+Stop_btn = uicontrol('Parent', Event_tab,'Style', 'pushbutton',...
+                     'String', 'Stop',...
+                     'Units','normalized','Position', [0.8 0.07 0.1 0.09],...
+                     'FontSize',14,'Callback', {@EventsStop_btn_Callback});
+
+Threshold_bg = uibuttongroup('Parent', Event_tab,'Title','Thresholds',...
+                           'BackgroundColor',0.52*[1 1 1],...
+                           'Position',[0.68 0.25 0.1 0.6],...
+                           'SelectionChangedFcn',{@Threshold_bg_Callback});
+       
+PosY = 1;
+for i=1:8
+    PosY = PosY -0.1;
+    Threshold_txt(i) = uicontrol(Threshold_bg,'Style',...
+                              'text',...
+                              'BackgroundColor',0.52*[1 1 1],...
+                              'String',['Ch' num2str(i-1)],...
+                              'Units','normalized',...
+                              'Position',[0.1 PosY 0.3 0.04]);
+                          
+    Threshold_bn(i) = uicontrol(Threshold_bg,'Style',...
+                              'edit',...
+                              'String',0,...
+                              'Units','normalized',...
+                              'Position',[0.4 PosY 0.4 0.05]);
+end
+SetThresholds_bn(i) = uicontrol(Threshold_bg,'Style',...
+                              'pushbutton',...
+                              'String','Set',...
+                              'Units','normalized',...
+                              'FontSize',12,...
+                              'Position',[0.25 0.05 0.6 0.1]);
+                 
+function SignalStart_btn_Callback(hObject, eventdata, handles)
+global AnalogModuleStreamer;
+
+if AnalogModuleStreamer.Signal.Running==0
+    
+    %Reset acquisition time
+    AnalogModuleStreamer.T = 0;
+
+    %Reset Plot
+    set(AnalogModuleStreamer.Signal.Plot,'XData',[],'YData',[]);
+
+    % Send 'Select channel' command to the AM
+    % Send 'Select range' command to the AM
+
+    % Send 'Start' command to the AM
+    try
+        AnalogModuleStreamer.Port.write(uint8([213 61]), 'uint8');
+    catch
+        %ok
+    end
+
+    %Acquisition timer
+    AnalogModuleStreamer.timer = timer('Name','MyTimer',               ...
+                       'Period',AnalogModuleStreamer.Signal.TimerPeriod,                    ... 
+                       'StartDelay',0,                 ... 
+                       'TasksToExecute',inf,           ... 
+                       'ExecutionMode','fixedSpacing', ...
+                       'TimerFcn',{@timerCallback,'Signal'});
+
+    AnalogModuleStreamer.Signal.Running=1;
+    start(AnalogModuleStreamer.timer);
+
+end
+
+function EventsStart_btn_Callback(hObject, eventdata, handles)
+global AnalogModuleStreamer;
+
+if AnalogModuleStreamer.Events.Running==0
+    
+    %Reset acquisition time
+    AnalogModuleStreamer.T = 0;
+
+    %Reset Plot
+    set(AnalogModuleStreamer.Events.Plot,'XData',[],'YData',[]);
+
+    % Send 'StartEvents' command to the AM
+    try
+        %AnalogModuleStreamer.Port.write(uint8([213 61]), 'uint8');
+    catch
+    end
+
+    %Acquisition timer
+    AnalogModuleStreamer.timer = timer('Name','MyTimer',               ...
+                       'Period',AnalogModuleStreamer.Signal.TimerPeriod,                    ... 
+                       'StartDelay',0,                 ... 
+                       'TasksToExecute',inf,           ... 
+                       'ExecutionMode','fixedSpacing', ...
+                       'TimerFcn',{@timerCallback,'Events'});
+
+    AnalogModuleStreamer.Events.Running=1;
+    start(AnalogModuleStreamer.timer);
+end
+
+
+function SignalStop_btn_Callback(hObject, eventdata, handles)
+
+global AnalogModuleStreamer;
+
+if isfield(AnalogModuleStreamer, 'timer')
+     stop(AnalogModuleStreamer.timer);
+end
+
+% Send 'Stop' command to the AM
+try
+    AnalogModuleStreamer.Port.write(uint8([213 62]), 'uint8');
+catch
+end
+AnalogModuleStreamer.Signal.Running=0;
+
+
+function Win_edt_Callback(hObject, eventdata, handles)
+global AnalogModuleStreamer
+AnalogModuleStreamer.Signal.TimeWindow = str2double(get(hObject,'String'));
+
+function EventsStop_btn_Callback(hObject, eventdata, handles)
+
+global AnalogModuleStreamer;
+
+if isfield(AnalogModuleStreamer, 'timer')
+     stop(AnalogModuleStreamer.timer);
+end
+
+% Send 'EventsStop' command to the AM
+try
+    %AnalogModuleStreamer.Port.write(uint8([213 62]), 'uint8');
+catch
+end
+AnalogModuleStreamer.Events.Running=0;
+
+function [] = timerCallback(~,~,Tab)
+
+    global AnalogModuleStreamer;
+
+    % Increase time step  
+    AnalogModuleStreamer.T = AnalogModuleStreamer.T+AnalogModuleStreamer.Signal.TimerPeriod;
+
+    % Read
+    %if AnalogModuleStreamer.Port.bytesAvailable
+
+    switch Tab
+        case 'Signal'
+            
+            try
+                a = double(AnalogModuleStreamer.Port.read(1, 'int32'))/10^6;
+            catch
+                a=rand;
+            end
+            
+            xdata = [AnalogModuleStreamer.Signal.Plot.XData AnalogModuleStreamer.T];
+            ydata = [AnalogModuleStreamer.Signal.Plot.YData a];
+            set(AnalogModuleStreamer.Signal.Plot,'XData',xdata,'YData',ydata)
+            AnalogModuleStreamer.Signal.Axis.XLim = [0 xdata(end)];
+
+            % Constant-size window
+            if AnalogModuleStreamer.T>=AnalogModuleStreamer.Signal.TimeWindow
+                xdata_win = xdata(xdata>AnalogModuleStreamer.T-AnalogModuleStreamer.Signal.TimeWindow);
+                ydata_win = ydata(xdata>AnalogModuleStreamer.T-AnalogModuleStreamer.Signal.TimeWindow);
+                set(AnalogModuleStreamer.Signal.Plot,'XData',xdata_win,'YData',ydata_win)
+                AnalogModuleStreamer.Signal.Axis.XLim = [AnalogModuleStreamer.T-AnalogModuleStreamer.Signal.TimeWindow AnalogModuleStreamer.T];
+            end
+
+            switch AnalogModuleStreamer.Signal.SelectedRange
+                case 1
+                    AnalogModuleStreamer.Signal.Axis.YLim = [0 10];
+                case 2
+                    AnalogModuleStreamer.Signal.Axis.YLim = [-2.5 2.5];
+                case 3
+                    AnalogModuleStreamer.Signal.Axis.YLim = [-5 5];
+                case 4
+                    AnalogModuleStreamer.Signal.Axis.YLim = [-10 10];
+            end
+
+            drawnow
+            AnalogModuleStreamer.handles.Value_txt.String = num2str(a,'%2.4f');
+            
+            
+        case 'Events'
+            
+            try
+                % Read Threshold Events
+                a = double(AnalogModuleStreamer.Port.read(1, 'uint8'));
+            catch            
+                a = randi(255);
+            end
+            
+            Events = dec2bin(a,8);
+            
+            xdata = [AnalogModuleStreamer.Events.Plot(1).XData AnalogModuleStreamer.T];
+            
+            
+            for i=1:8
+                
+                ydata = [AnalogModuleStreamer.Events.Plot(i).YData str2num(Events(i))*i];
+                set(AnalogModuleStreamer.Events.Plot(i),'XData',xdata,'YData',ydata);
+                                         
+
+                % Constant-size window
+                if AnalogModuleStreamer.T>=AnalogModuleStreamer.Events.TimeWindow
+                    xdata_win = xdata(xdata>AnalogModuleStreamer.T-AnalogModuleStreamer.Events.TimeWindow);
+                    ydata_win = ydata(xdata>AnalogModuleStreamer.T-AnalogModuleStreamer.Events.TimeWindow);
+                    set(AnalogModuleStreamer.Signal.Plot,'XData',xdata_win,'YData',ydata_win)
+                    AnalogModuleStreamer.Events.Axis.XLim = [AnalogModuleStreamer.T-AnalogModuleStreamer.Events.TimeWindow AnalogModuleStreamer.T];
+                end
+            
+            end
+            AnalogModuleStreamer.Events.Axis.XLim = [0 xdata(end)];
+            AnalogModuleStreamer.Events.Axis.YLim = [0.5 8.5];
+            drawnow
+    end
+    
+    
+%end
+
+% --- Executes when selected object is changed in channel_btngroup.
+function Channel_bg_Callback(hObject, eventdata, handles)
+% hObject    handle to the selected object in channel_btngroup 
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global AnalogModuleStreamer
+
+%Change channel
+% Select ADC channel
+switch hObject.SelectedObject.String
+    case 'Channel 0'
+        AnalogModuleStreamer.Signal.SelectedChannel = 0;
+    case 'Channel 1'
+        AnalogModuleStreamer.Signal.SelectedChannel = 1;
+    case 'Channel 2'
+        AnalogModuleStreamer.Signal.SelectedChannel = 2;
+    case 'Channel 3'
+        AnalogModuleStreamer.Signal.SelectedChannel = 3;
+    case 'Channel 4'
+        AnalogModuleStreamer.Signal.SelectedChannel = 4;
+    case 'Channel 5'
+        AnalogModuleStreamer.Signal.SelectedChannel = 5;
+    case 'Channel 6'
+        AnalogModuleStreamer.Signal.SelectedChannel = 6;
+    case 'Channel 7'
+        AnalogModuleStreamer.Signal.SelectedChannel = 7;
+    otherwise
+end
+
+% Send 'Select channel' command to the AM
+try
+    AnalogModuleStreamer.Port.write(uint8([213 63 AnalogModuleStreamer.SelectedChannel]), 'uint8');
+catch
+end
+
+%Reset Plot
+set(AnalogModuleStreamer.Signal.Plot,'XData',[],'YData',[]);
+
+% --- Executes when selected object is changed in range_btngroup.
+function Range_bg_Callback(hObject, eventdata, handles)
+
+% Select ADC Range
+global AnalogModuleStreamer
+
+switch hObject.SelectedObject.String
+    case '0V - 10V'
+        AnalogModuleStreamer.Signal.SelectedRange = 1;
+    case '-2.5V - 2.5V'
+        AnalogModuleStreamer.Signal.SelectedRange = 2;
+    case '-5V - 5V'
+        AnalogModuleStreamer.Signal.SelectedRange = 3;
+    case '-10V - 10V'
+        AnalogModuleStreamer.Signal.SelectedRange = 4;
+    otherwise            
+end
+
+% Send 'Select range' command to the AM
+try
+AnalogModuleStreamer.Port.write(uint8([213 64 AnalogModuleStreamer.SelectedRange]), 'uint8');
+catch
+end
+%Reset Plot
+set(AnalogModuleStreamer.Signal.Plot,'XData',[],'YData',[]);
+ 
+function TabChange_Callback(hObject,~)
+global AnalogModuleStreamer
+switch hObject.SelectedTab.Title
+    case 'Signal'
+        %Stop sending events
+        try
+            %AnalogModuleStreamer.Port.write(uint8([213 63 AnalogModuleStreamer.SelectedChannel]), 'uint8');
+        end
+        if isfield(AnalogModuleStreamer, 'timer')
+            stop(AnalogModuleStreamer.timer);
+        end
+        
+        % If signal was started before, send signal start
+        if AnalogModuleStreamer.Signal.Running
+            try
+                %AnalogModuleStreamer.Port.write(uint8([213 63 AnalogModuleStreamer.SelectedChannel]), 'uint8');
+            end
+            %Acquisition timer
+            AnalogModuleStreamer.timer = timer('Name','MyTimer',               ...
+                               'Period',AnalogModuleStreamer.Signal.TimerPeriod,                    ... 
+                               'StartDelay',0,                 ... 
+                               'TasksToExecute',inf,           ... 
+                               'ExecutionMode','fixedSpacing', ...
+                               'TimerFcn',{@timerCallback,'Signal'});
+
+            AnalogModuleStreamer.Signal.Running=1;
+            start(AnalogModuleStreamer.timer);
+        end
+    case 'Events'
+        %Stop sending signal
+        try
+            %AnalogModuleStreamer.Port.write(uint8([213 63 AnalogModuleStreamer.SelectedChannel]), 'uint8');
+        end
+        if isfield(AnalogModuleStreamer, 'timer')
+            stop(AnalogModuleStreamer.timer);
+        end
+        
+        % If events was started before, send events start
+        if AnalogModuleStreamer.Events.Running
+            try
+                %AnalogModuleStreamer.Port.write(uint8([213 63 AnalogModuleStreamer.SelectedChannel]), 'uint8');
+            end
+            
+            AnalogModuleStreamer.timer = timer('Name','MyTimer',               ...
+                               'Period',AnalogModuleStreamer.Events.TimerPeriod,                    ... 
+                               'StartDelay',0,                 ... 
+                               'TasksToExecute',inf,           ... 
+                               'ExecutionMode','fixedSpacing', ...
+                               'TimerFcn',{@timerCallback,'Events'});
+
+            AnalogModuleStreamer.Events.Running=1;
+            start(AnalogModuleStreamer.timer);
+        end        
+end
+    
