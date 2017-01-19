@@ -21,12 +21,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <SPI.h>
-#include <SdFat.h>
-#include <SdFatUtil.h>
+
+//#include <SdFat.h>
+//#include <SdFatUtil.h>
+
 #include <ArCOM.h> // ArCOM is a serial interface wrapper developed by Sanworks, to streamline transmission of datatypes and arrays over serial
 
 ArCOM myUSB(SerialUSB); // Creates an ArCOM object called myUSB, wrapping SerialUSB
-
 
 // Define macros for compressing sequential bytes read from the serial port into long and short ints
 #define makeUnsignedLong(msb, byte2, byte3, lsb) ((msb << 24) | (byte2 << 16) | (byte3 << 8) | (lsb))
@@ -38,8 +39,8 @@ const uint32_t SAMPLE_INTERVAL_US = 250000;
 byte FirmwareVersion = 1;
 
 // Variables that define other hardware pins
-byte adcChipSelectPin = 8; // set pin 8 as the chip select for the ADC:
-byte SDChipSelectPin = 4; // set pin 4 as the chip select for the SD
+byte adcChipSelectPin = 21; // set pin 8 as the chip select for the ADC:
+//byte SDChipSelectPin = 14; // set pin 4 as the chip select for the SD
 
 // Variables for SPI bus
 SPISettings ADCSettings(1000000, MSBFIRST, SPI_MODE2);
@@ -96,8 +97,9 @@ uint8_t buf4[4];
 
 #define FILE_BASE_NAME "Data2"
 unsigned long SystemTime = 0;
-SdFat sd;
-SdFile DataFile;
+
+//SdFat sd;
+//SdFile DataFile;
 
 char fileName[13] = FILE_BASE_NAME "00.csv";
  
@@ -114,7 +116,8 @@ void setup() {
   pinMode(13, OUTPUT);  
   pinMode(adcChipSelectPin, OUTPUT);
   digitalWrite(adcChipSelectPin, HIGH);
-  pinMode(SDChipSelectPin, OUTPUT); // microSD setup
+  
+  //pinMode(SDChipSelectPin, OUTPUT); // microSD setup
   
   SerialUSB.begin(115200); // Initialize Serial USB interface at 115.2kbps
   Serial1.begin(1312500); // Initialize UART serial port to talk to bpod
@@ -125,10 +128,10 @@ void setup() {
   
   // Initialize the SD card at SPI_HALF_SPEED to avoid bus errors with
   // breadboards.  use SPI_FULL_SPEED for better performance.
-  if (!sd.begin(SDChipSelectPin, SPI_HALF_SPEED)) { 
-  //if (!sd.begin(SDChipSelectPin, SPI_FULL_SPEED)) {
-    sd.initErrorHalt();
-  }
+//  if (!sd.begin(SDChipSelectPin, SPI_HALF_SPEED)) { 
+//  //if (!sd.begin(SDChipSelectPin, SPI_FULL_SPEED)) {
+//    sd.initErrorHalt();
+//  }
    
   Timer3.attachInterrupt(handler);
   Timer3.start(SAMPLE_INTERVAL_US); // Calls handler precisely every 50us
@@ -156,12 +159,12 @@ void handler(void) {
             // then control logging through this commands
             // as opposed to this implementation
             // which opens the file every time and might add delays.
-           StartLogData(); 
+           //StartLogData(); 
           } break;
       
         case 10: { // Stop logging data
       
-            StopLogData();
+          //  StopLogData();
           } break;
       }
   }
@@ -185,7 +188,7 @@ void handler(void) {
             LoggingDataToSD = 0;
             SendingEventsToBpod = 0;
             SystemTime = 0;
-            DataFile.close();
+//            DataFile.close();
             
           } break;
 
@@ -333,38 +336,38 @@ void handler(void) {
             
           } break;
 
-          case 68: { // Start logging data
-
-            StartLogData(); 
-                       
-          } break;
+//          case 68: { // Start logging data
+//
+//            StartLogData(); 
+//                       
+//          } break;
           
-          case 69: { // Stop  logging data
+//          case 69: { // Stop  logging data
+//
+//            StopLogData();
+//
+//          } break;
 
-            StopLogData();
-
-          } break;
-
-          case 70: { // Read SD card and send data 
-            
-            LoggingDataToSD = 0;
-            SystemTime = 0;
-            
-            DataFile.close();
-   
-
-            unsigned long d0;
-            DataFile.open(fileName, O_RDWR | O_CREAT | O_AT_END);
-            DataFile.seekSet(0);
-  
-            while (DataFile.available() > 0) {
-                d0 = readLongFromSD();
-                myUSB.writeUint32(d0);
-            }
-            DataFile.close();
-            
-            
-          } break;
+//          case 70: { // Read SD card and send data 
+//            
+//            LoggingDataToSD = 0;
+//            SystemTime = 0;
+//            
+//            DataFile.close();
+//   
+//
+//            unsigned long d0;
+//            DataFile.open(fileName, O_RDWR | O_CREAT | O_AT_END);
+//            DataFile.seekSet(0);
+//  
+//            while (DataFile.available() > 0) {
+//                d0 = readLongFromSD();
+//                myUSB.writeUint32(d0);
+//            }
+//            DataFile.close();
+//            
+//            
+//          } break;
 
           case 75: { // Change sampling period
             
@@ -479,6 +482,7 @@ void handler(void) {
 
   // Streaming data with AnalogStreamer
   if (StreamSignalToUSB == 1) {
+    digitalWrite(13,!digitalRead(13));
     myUSB.writeInt32(readOneChannel(ChannelToStream));
   }
 
@@ -578,11 +582,8 @@ return adcDigitalValue;
 
 // Function to read all active channels, accepts pointer to an array 
 void readActiveChannels(long unsigned *pdata){
-  
   // ActiveChannelsByte:  has a 1 in every channel that is active
 
-
-  //digitalWrite(13,!digitalRead(13));
   noInterrupts(); // disable interupts to prepare to send address data to the ADC.
   
   for (int i=0; i < nActiveChannels; i++){
@@ -640,18 +641,19 @@ void SendThresholdCrossingEvents(unsigned long data[]){
   }
 }
 
-// Log data
+//Log data
 void LogData(unsigned long SystemTime, unsigned long data[]){
   
-  //Write System Time to SD
-  breakLong(SystemTime); 
-  writeLong2SD(); //Log time from logging start
-  
-  //Write data to SD
-  for (int i = 0; i < nActiveChannels; i++) {
-    breakLong(data[i]); 
-    writeLong2SD();   
-  }
+//  //Write System Time to SD
+//  breakLong(SystemTime); 
+//  writeLong2SD(); //Log time from logging start
+//  
+//  //Write data to SD
+//  for (int i = 0; i < nActiveChannels; i++) {
+//    breakLong(data[i]); 
+//    writeLong2SD();   
+//  }
+
 }
 
 
@@ -706,29 +708,29 @@ void SetVoltageRange(byte VoltageRangeByte1,byte VoltageRangeByte2){
             
 }
 
-// Log data
-void StartLogData() {
-  
-    LoggingDataToSD = 1;
-    Serial1.write(9); // Send start logging flag to bpod  
-    
-//            //Find an unused file name.
-//            while (sd.exists(fileName)) {
-//              if (fileName[BASE_NAME_SIZE + 1] != '9') {
-//                fileName[BASE_NAME_SIZE + 1]++;
-//              } else if (fileName[BASE_NAME_SIZE] != '9') {
-//                fileName[BASE_NAME_SIZE + 1] = '0';
-//                fileName[BASE_NAME_SIZE]++;
-//              } else {
-//                error("Can't create file name");
-//              }
-//            }
-
-    sd.remove(fileName);
-    DataFile.open(fileName, O_CREAT | O_WRITE | O_EXCL);
-
-    SetupSequenceRead(ActiveChannelsByte);
-}
+//// Log data
+//void StartLogData() {
+//  
+//    LoggingDataToSD = 1;
+//    Serial1.write(9); // Send start logging flag to bpod  
+//    
+////            //Find an unused file name.
+////            while (sd.exists(fileName)) {
+////              if (fileName[BASE_NAME_SIZE + 1] != '9') {
+////                fileName[BASE_NAME_SIZE + 1]++;
+////              } else if (fileName[BASE_NAME_SIZE] != '9') {
+////                fileName[BASE_NAME_SIZE + 1] = '0';
+////                fileName[BASE_NAME_SIZE]++;
+////              } else {
+////                error("Can't create file name");
+////              }
+////            }
+//
+//    sd.remove(fileName);
+//    DataFile.open(fileName, O_CREAT | O_WRITE | O_EXCL);
+//
+//    SetupSequenceRead(ActiveChannelsByte);
+//}
 
 // Setting up chip for sequence read
 void SetupSequenceRead(byte ActiveChannelsByte) {
@@ -759,15 +761,14 @@ void SetupSequenceRead(byte ActiveChannelsByte) {
     interrupts(); // Enable interupts.
 }
 
-void StopLogData() {
-  
-  LoggingDataToSD = 0;
-  Serial1.write(10); // Send stop logging flag to bpod
-
-  // Close logging file
-  DataFile.close();
-  
-}
+//void StopLogData() {
+// 
+//  LoggingDataToSD = 0;
+//  Serial1.write(10); // Send stop logging flag to bpod
+//
+//  // Close logging file
+//  DataFile.close();
+//}
 
 //Function to detect thresholds read all channels of the ADC in sequence
 byte StreamThresholdCrossing() {
@@ -843,36 +844,38 @@ void breakShort(word Value2Break) {
   BrokenBytes[0] = (byte)Value2Break;
 }
 
-void writeLong2SD() {
-DataFile.write(BrokenBytes[0]);
-DataFile.write(BrokenBytes[1]);
-DataFile.write(BrokenBytes[2]);
-DataFile.write(BrokenBytes[3]);
-}
-void writeShort2SD() {
-DataFile.write(BrokenBytes[0]);
-DataFile.write(BrokenBytes[1]);
-}
+//void writeLong2SD() {
+//DataFile.write(BrokenBytes[0]);
+//DataFile.write(BrokenBytes[1]);
+//DataFile.write(BrokenBytes[2]);
+//DataFile.write(BrokenBytes[3]);
+//}
 
-unsigned long readLongFromSD() {
-unsigned long myLongInt = 0;
-DataFile.read(buf4, sizeof(buf4));
-myLongInt = makeUnsignedLong(buf4[3], buf4[2], buf4[1], buf4[0]);
-return myLongInt;
-}
-word readShortFromSD() {
-word myWord = 0;
-DataFile.read(buf2, sizeof(buf2));
-myWord = makeUnsignedShort(buf2[1], buf2[0]);
-return myWord;
-}
+//void writeShort2SD() {
+//DataFile.write(BrokenBytes[0]);
+//DataFile.write(BrokenBytes[1]);
+//}
 
-byte readByteFromSD() {
-byte myByte = 0;
-DataFile.read(buf, sizeof(buf));
-myByte = buf[0];
-return myByte;
-}
+//unsigned long readLongFromSD() {
+//unsigned long myLongInt = 0;
+//DataFile.read(buf4, sizeof(buf4));
+//myLongInt = makeUnsignedLong(buf4[3], buf4[2], buf4[1], buf4[0]);
+//return myLongInt;
+//}
+
+//word readShortFromSD() {
+//word myWord = 0;
+//DataFile.read(buf2, sizeof(buf2));
+//myWord = makeUnsignedShort(buf2[1], buf2[0]);
+//return myWord;
+//}
+
+//byte readByteFromSD() {
+//byte myByte = 0;
+//DataFile.read(buf, sizeof(buf));
+//myByte = buf[0];
+//return myByte;
+//}
  
 void Software_Reset() {
   const int RSTC_KEY = 0xA5;
