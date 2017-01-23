@@ -108,6 +108,8 @@ int ConnectedToApp = 0; // 0 if disconnected, 1 if connected
 void handler(void);
 int adcDigitalValue = 0;
 
+unsigned long LoggedData[8000];
+
 // Error messages stored in flash.
 #define error(msg) sd.errorHalt(F(msg))
 
@@ -336,38 +338,30 @@ void handler(void) {
             
           } break;
 
-//          case 68: { // Start logging data
-//
-//            StartLogData(); 
-//                       
-//          } break;
-          
-//          case 69: { // Stop  logging data
-//
-//            StopLogData();
-//
-//          } break;
+          case 68: { // Start logging data
 
-//          case 70: { // Read SD card and send data 
-//            
-//            LoggingDataToSD = 0;
-//            SystemTime = 0;
-//            
-//            DataFile.close();
-//   
-//
-//            unsigned long d0;
-//            DataFile.open(fileName, O_RDWR | O_CREAT | O_AT_END);
-//            DataFile.seekSet(0);
-//  
-//            while (DataFile.available() > 0) {
-//                d0 = readLongFromSD();
-//                myUSB.writeUint32(d0);
-//            }
-//            DataFile.close();
-//            
-//            
-//          } break;
+            SystemTime = 0;
+            StartLogData(); 
+                       
+          } break;
+          
+          case 69: { // Stop  logging data
+
+//            StopLogData();
+
+          } break;
+
+          case 70: { // Read SD card and send data 
+            
+            LoggingDataToSD = 0;
+
+            for (int i=0; i < SystemTime; i++){
+              myUSB.writeUint32(i+1);
+              for (int j=0; j < nActiveChannels; j++){
+                myUSB.writeUint32(LoggedData[(i-1)*nActiveChannels+j]);
+              }
+            }   
+          } break;
 
           case 75: { // Change sampling period
             
@@ -494,6 +488,8 @@ void handler(void) {
     
   if ((LoggingDataToSD == 1) || (SendingEventsToBpod==1))  {
 
+    digitalWrite(13,!digitalRead(13));
+    
     // Increase time one step
     SystemTime++;
     
@@ -644,16 +640,10 @@ void SendThresholdCrossingEvents(unsigned long data[]){
 //Log data
 void LogData(unsigned long SystemTime, unsigned long data[]){
   
-//  //Write System Time to SD
-//  breakLong(SystemTime); 
-//  writeLong2SD(); //Log time from logging start
-//  
-//  //Write data to SD
-//  for (int i = 0; i < nActiveChannels; i++) {
-//    breakLong(data[i]); 
-//    writeLong2SD();   
-//  }
-
+  //Save to RAM
+  for (int i = 0; i < nActiveChannels; i++) {
+    LoggedData[(SystemTime-1)*nActiveChannels+i] = data[i]; 
+  }
 }
 
 
@@ -708,29 +698,12 @@ void SetVoltageRange(byte VoltageRangeByte1,byte VoltageRangeByte2){
             
 }
 
-//// Log data
-//void StartLogData() {
-//  
-//    LoggingDataToSD = 1;
-//    Serial1.write(9); // Send start logging flag to bpod  
-//    
-////            //Find an unused file name.
-////            while (sd.exists(fileName)) {
-////              if (fileName[BASE_NAME_SIZE + 1] != '9') {
-////                fileName[BASE_NAME_SIZE + 1]++;
-////              } else if (fileName[BASE_NAME_SIZE] != '9') {
-////                fileName[BASE_NAME_SIZE + 1] = '0';
-////                fileName[BASE_NAME_SIZE]++;
-////              } else {
-////                error("Can't create file name");
-////              }
-////            }
-//
-//    sd.remove(fileName);
-//    DataFile.open(fileName, O_CREAT | O_WRITE | O_EXCL);
-//
-//    SetupSequenceRead(ActiveChannelsByte);
-//}
+// Log data
+void StartLogData() {
+  
+    LoggingDataToSD = 1;
+    SetupSequenceRead(ActiveChannelsByte);
+}
 
 // Setting up chip for sequence read
 void SetupSequenceRead(byte ActiveChannelsByte) {

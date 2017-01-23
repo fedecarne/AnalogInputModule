@@ -81,7 +81,10 @@ nActiveChannels = size(AnalogModuleSystem.ActiveChannels,2);
 y = nan(nActiveChannels,size(rawdata,2)/(nActiveChannels+1));
 for i=1:nActiveChannels
     x = ScaleTime(rawdata(1:nActiveChannels+1:end));
-    y(i,:) = ScaleValue('toVolts',rawdata(i+1:nActiveChannels+1:end),AnalogModuleSystem.VoltageRange(AnalogModuleSystem.ActiveChannels(i)));
+    %y(i,:) = ScaleValue('toVolts',rawdata(i+1:nActiveChannels+1:end),AnalogModuleSystem.VoltageRange(AnalogModuleSystem.ActiveChannels(i)));
+    d = rawdata(i+1:nActiveChannels+1:end);
+    zerofill = size(y,2)-size(d,2);
+    y(i,:) = ScaleValue('toVolts',[d zeros(1,zerofill)],AnalogModuleSystem.VoltageRange(AnalogModuleSystem.ActiveChannels(i)));
 end
 r.x = x;
 r.y = y;

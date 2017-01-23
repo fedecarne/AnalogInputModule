@@ -66,6 +66,11 @@ switch ParamCode
         
     case 2 % Voltage Range
         
+        %1: '-10V - 10V'
+        %2: '-5V - 5V'
+        %3: '-2.5V - 2.5V'
+        %4: '0V - 10V'
+        
         % Builds bytes with individual voltage ranges
         % Prepared to be easily loaded in ADC range registers
         
