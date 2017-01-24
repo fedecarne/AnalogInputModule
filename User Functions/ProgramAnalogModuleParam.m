@@ -58,7 +58,7 @@ switch ParamCode
     case 1 % Sampling Period
         ParamValue = varargin{1};
         
-        if ParamValue<1 || ParamValue>1000
+        if ParamValue<0 || ParamValue>1000
            error('Sampling period must be a value from 1 to 1000.');
         end
         AnalogModuleSystem.SerialPort.write(uint8([213 75 ParamValue]), 'uint8');
