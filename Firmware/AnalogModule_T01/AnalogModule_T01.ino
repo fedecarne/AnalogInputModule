@@ -108,7 +108,7 @@ int ConnectedToApp = 0; // 0 if disconnected, 1 if connected
 void handler(void);
 int adcDigitalValue = 0;
 
-unsigned long LoggedData[8000];
+unsigned long LoggedData[20000];
 
 // Error messages stored in flash.
 #define error(msg) sd.errorHalt(F(msg))
@@ -365,9 +365,9 @@ void handler(void) {
 
           case 75: { // Change sampling period
             
-            byte samplingPeriod = myUSB.readByte(); // 
+            unsigned long samplingPeriod = myUSB.readUint32();
             Timer3.stop();
-            Timer3.setPeriod((unsigned long)samplingPeriod*1000);
+            Timer3.setPeriod((unsigned long)samplingPeriod);
             Timer3.start();
             
           } break;
@@ -396,77 +396,11 @@ void handler(void) {
           } break;
 
         case 85: { // Return the currently loaded parameter file from the microSD card
-            /*
-              settingsFile.rewind();
-              for (int i = 0; i < 178; i++) {
-              settingsFile.read(buf, sizeof(buf));
-              SerialUSB.write(buf[0]);
-              }
-            */
+
           } break;
 
         case 90: { // Save, load or delete the current microSD settings file
-            /*
-              byte confirmBit = 1;
-              while (SerialUSB.available()==0){}
-              settingsOp = SerialUSB.read();
-              while (SerialUSB.available()==0){}
-              settingsFileNameLength = SerialUSB.read();
-              currentSettingsFileName = "";
-              for (int i = 0; i < settingsFileNameLength; i++) {
-              while (SerialUSB.available()==0){}
-              currentSettingsFileName = currentSettingsFileName + (char)SerialUSB.read();
-              }
-              settingsFile.close();
-              currentSettingsFileName.toCharArray(currentSettingsFileNameChar, settingsFileNameLength+1);
-              if (settingsOp == 1) { // Save
-              SaveCurrentProgram2SD();
-              } else if (settingsOp == 2) { // Load
-              settingsFile.open(currentSettingsFileNameChar, O_READ);
-              validProgram = RestoreParametersFromSD();
-              if (validProgram != 252) { // If load failed, load defaults and report error
-                LoadDefaultParameters();
-                settingsFile.close();
-                currentSettingsFileName = "defaultSettings.pps";
-                currentSettingsFileName.toCharArray(currentSettingsFileNameChar, sizeof(currentSettingsFileName));
-                settingsFile.open(currentSettingsFileNameChar, O_READ);
-                confirmBit = 0;
-              } else {
-                // Return parameters from file to update client
-                  for (int x = 0; x < 4; x++) {
-                    SerialWriteLong(Phase1Duration[x]);
-                    SerialWriteLong(InterPhaseInterval[x]);
-                    SerialWriteLong(Phase2Duration[x]);
-                    SerialWriteLong(InterPulseInterval[x]);
-                    SerialWriteLong(BurstDuration[x]);
-                    SerialWriteLong(BurstInterval[x]);
-                    SerialWriteLong(PulseTrainDuration[x]);
-                    SerialWriteLong(PulseTrainDelay[x]);
-                  }
-                  for (int x = 0; x < 4; x++) {
-                    SerialWriteShort(Phase1Voltage[x]);
-                    SerialWriteShort(Phase2Voltage[x]);
-                    SerialWriteShort(RestingVoltage[x]);
-                  }
-                  for (int x = 0; x < 4; x++) {
-                    SerialUSB.write(IsBiphasic[x]);
-                    SerialUSB.write(CustomTrainID[x]);
-                    SerialUSB.write(CustomTrainTarget[x]);
-                    SerialUSB.write(CustomTrainLoop[x]);
-                  }
-                 for (int x = 0; x < 2; x++) { // Read 8 trigger address bytes
-                   for (int y = 0; y < 4; y++) {
-                    SerialUSB.write(TriggerAddress[x][y]);
-                   }
-                 }
-                 SerialUSB.write(TriggerMode[0]);
-                 SerialUSB.write(TriggerMode[1]);
-               }
-            	} else if (settingsOp == 3) { // Delete
-              	sd.remove(currentSettingsFileNameChar);
-            	}
-              settingsFile.rewind();
-            */
+            
           } break;
       }// end command switch
     }// end SerialUSB available

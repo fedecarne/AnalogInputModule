@@ -59,11 +59,9 @@ switch ParamCode
         ParamValue = varargin{1};
         
         if ParamValue<0 || ParamValue>1000
-           error('Sampling period (ms) must be a value from 0 to 1000.');
+           error('Sampling period must be a value from 0 to 1000.');
         end
-        
-        SamplingPerdiodUS = ParamValue*1000; % in US
-        AnalogModuleSystem.SerialPort.write(uint8([213 75]), 'uint8', SamplingPerdiodUS , 'uint32');
+        AnalogModuleSystem.SerialPort.write(uint8([213 75 ParamValue]), 'uint8');
         AnalogModuleSystem.SamplingPeriod = ParamValue;
         
     case 2 % Voltage Range
