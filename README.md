@@ -26,4 +26,4 @@ Features:
 To get started:
 1. Add this folder ('MATLAB') to the MATLAB path. Subfolders not necessary.
 
-2. Run 'AnalogModule'. 
+2. Run 'AnalogModule'.  
