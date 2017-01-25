@@ -92,6 +92,10 @@ WaveGen.amplitude = 20;
 WaveGen.waveform = 'sine';
 pause(1);
 
+Fs = 50000;
+WaveGen.duration = 0.;
+nFs = 1;
+
 SNR = nan(1,nFs);
 
 for i=1:nFs

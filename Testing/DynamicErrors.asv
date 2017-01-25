@@ -83,7 +83,7 @@ close
 % SNR Vs Sampling Freq
 
 
-Fs = 100:500:5000;
+Fs = 500:1000:20000;
 nFs = size(Fs,2);
 
 WaveGen.duration = 1;
@@ -92,10 +92,14 @@ WaveGen.amplitude = 20;
 WaveGen.waveform = 'sine';
 pause(1);
 
+Fs = 50000;
+WaveGen.duration = 0.;
+nFs = 1;
+
 SNR = nan(1,nFs);
 
 for i=1:nFs
-
+i
     SamplingPeriod = 1000/Fs(i);
     ProgramAnalogModuleParam('SamplingPeriod', SamplingPeriod);
     pause(0.5);
@@ -130,10 +134,12 @@ set(gcf, 'PaperUnits', 'inches')
 set(gcf, 'PaperSize',[width height])
 set(gcf, 'PaperPosition',[0 0 width height])
 plot(Fs/1000,SNR,'.','markersize',20)
+h=gca;
+h.YAxis.Limits = [50 70];
 box off
 grid
 ylabel('SNR')
 xlabel('Sampling Frequency (kHz)')
 print('-dpng', 'SnrVsFs.png','-r300');
-close
+%close
 

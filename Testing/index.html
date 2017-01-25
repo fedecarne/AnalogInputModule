@@ -28,27 +28,29 @@
       <ul>
         <li><a href="#Static Performance" class="cc-active">Static Performance</a></li>
         <li><a href="#Dynamic Performance" class="cc-active">Dynamic Performance</a></li>
-        <li><a href="#Signal-to-Noise Ratio" class="cc-active">Signal-to-Noise Ratio</a></li>
       </ul>    
       <li><a href="#License" class="cc-active">License</a></li>
     </ul>
 
     <div class="docs-content">
       <h3 id="Overview"> Overview</h3>
-      <p> Overview </p>
-
+      <p> The AnalogIn Module adds analog acquisition capabilities to the Bpod ecosystem. </p>
       <h3 id="Features"> Features</h3>
-      <ul>
-      <li>8 input channels (12-bit)</li>
-      <li>1kHz+ sampling</li>
-      <li>Input range: -10 to +10V (software selectable to +/- 5 or +/-2.5V ranges)</li>
-      <li>2 UART serial interfaces connect the module to:
-      <ul>
-        <li>The state machine (acquisition trigger signals, filtered events)</li>
-        <li>The analog output module (direct interface for closed loop applications)</li>
-      </ul>
-      <li>I2C interface supported with the I2C module</li>
-      <li>Powered by Arduino Due</li>
+        <ul>
+        <li>8 input channels (12-bit)</li>
+        <li>20kHz+ sampling</li>
+        <li>Input range: -10 to +10V (software selectable to +/- 5 or +/-2.5V  and 0 to 10V ranges)</li>
+        <li>MicroSD card to store up to XXX seconds of acquired data
+        <li>USB interface to stream or retrieve data from memory
+        <li>Threshold crossing detection (configurable)
+        <li>2 UART serial interfaces connect the module to:
+        <ul>
+          <li>The state machine</li>
+          <li>The analog output module (direct interface for closed loop applications)</li>
+        </ul>
+        <li>I2C interface supported with the I2C module</li>
+        <li>Matlab API</li>
+        <li>Powered by Arduino Due</li>
       </ul>
       <h3 id="User Functions"> User Functions</h3>
         <p> User Functions </p>
@@ -56,15 +58,13 @@
         <p> Examples </p>
       <h3 id="Performance"> Performance</h3>
         <h4 id="Static Performance"> Static Performance</h4> 
-          <p> Static performance</p>   
+          <p> The static performance of the board is characterized by the gain error, offset error and maximum absolute error. Below is the result of acquiring a set of static signals across the voltage range of the board. </p>   
           <img src="images/static1.png" alt="" style="width:400px;height:300px;" />
           <img src="images/static2.png" alt="" style="width:400px;height:300px;" />
         <h4 id="Dynamic Performance"> Dynamic Performance</h4> 
-          <p> Dynamic performance </p>   
-        <h4 id="Signal-to-Noise ratio"> Signal-to-Noise ratio</h4> 
-          <p> Signal-to-Noise ratio </p>   
+          <p> Signal-to-noise ratio (SNR), total harminic distortion (THD) and signal-to-noise-and-distortion were calculated using a 100Hz signal and sampling at 2kHz.  </p>   
           <img src="images/fourier.png" alt="" style="width:400px;height:300px;" />
-          <p></p>
+          <p> The SNR does not depend on the sampling frequency up to 20kHz. </p>
           <img src="images/SnrVsFs.png" alt="" style="width:400px;height:300px;" />
       <h3 id="license"> License</h3>
       <p> License </p>
