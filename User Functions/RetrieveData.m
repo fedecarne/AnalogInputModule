@@ -35,7 +35,7 @@ AnalogModuleSystem.SerialPort.write(uint8([213 70]), 'uint8');
 
             
 % Wait for SD transmition or time out
-waiting = 1; timeout=0;SDTransferTimeOut = 1000; tic; catchfirst=0;
+waiting = 1; timeout=0;SDTransferTimeOut = 60; tic; catchfirst=0;
 while waiting
     
     if AnalogModuleSystem.SerialPort.bytesAvailable>0 && catchfirst==0
@@ -49,6 +49,7 @@ while waiting
     if bytesAvailable1 == bytesAvailable2 && bytesAvailable2>0
         waiting=0;
     end
+    disp(toc)
     if toc> SDTransferTimeOut
         timeout=1;
         disp('An SD TimeOut has occurred.')
