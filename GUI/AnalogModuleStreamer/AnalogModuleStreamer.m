@@ -23,7 +23,7 @@ AnalogModuleStreamer.SelectedRange = 1;
 AnalogModuleStreamer.Running = 0;
 AnalogModuleStreamer.Logging = 0;
 AnalogModuleStreamer.CurrentWindow = 'Signal';
-
+    
 
 AnalogModuleStreamer.Figure = figure('Name','AnalogModule Streamer',...
                                      'NumberTitle','off',...
