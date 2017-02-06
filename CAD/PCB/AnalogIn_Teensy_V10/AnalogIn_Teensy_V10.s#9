@@ -4127,9 +4127,15 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 </classes>
 <parts>
 <part name="U1" library="AD7327BRUZ" deviceset="AD7327BRUZ" device=""/>
+<part name="C1" library="SparkFun-Capacitors" deviceset="CAP" device="1206" value="4.7uf"/>
+<part name="C2" library="SparkFun-Capacitors" deviceset="CAP" device="1206" value="4.7uf"/>
+<part name="C3" library="SparkFun-Capacitors" deviceset="CAP" device="1206" value="4.7uf"/>
+<part name="C4" library="SparkFun-Capacitors" deviceset="CAP" device="1206" value="10uf"/>
+<part name="C5" library="SparkFun-Capacitors" deviceset="CAP" device="1206" value="0.1uf"/>
 <part name="C10" library="SparkFun-Capacitors" deviceset="CAP" device="0603-CAP" value="0.1uf"/>
 <part name="C11" library="SparkFun-Capacitors" deviceset="CAP" device="0603-CAP" value="10uf"/>
 <part name="D1" library="diode" deviceset="SCHOTTKY-DIODE" device="SMD"/>
+<part name="C13" library="SparkFun-Capacitors" deviceset="CAP" device="1206" value="0.1uf"/>
 <part name="U2" library="Joshparts4" deviceset="SN65HVD31DR" device=""/>
 <part name="U3" library="Joshparts4" deviceset="SN65HVD31DR" device=""/>
 <part name="U$2" library="SparkFun" deviceset="RJ45-8" device="PTH"/>
@@ -4230,12 +4236,6 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 <part name="C49" library="SparkFun-Capacitors" deviceset="CAP" device="0603-CAP" value="10uf"/>
 <part name="C50" library="SparkFun-Capacitors" deviceset="CAP" device="0603-CAP" value="0.1uf"/>
 <part name="C51" library="SparkFun-Capacitors" deviceset="CAP" device="0603-CAP" value="0.1uf"/>
-<part name="C4" library="SparkFun-Capacitors" deviceset="CAP" device="0603-CAP" value="10uf"/>
-<part name="C5" library="SparkFun-Capacitors" deviceset="CAP" device="0603-CAP" value="0.1uf"/>
-<part name="C6" library="SparkFun-Capacitors" deviceset="CAP" device="0603-CAP" value="0.1uf"/>
-<part name="C7" library="SparkFun-Capacitors" deviceset="CAP" device="0603-CAP" value="4.7uf"/>
-<part name="C13" library="SparkFun-Capacitors" deviceset="CAP" device="0603-CAP" value="4.7uf"/>
-<part name="C14" library="SparkFun-Capacitors" deviceset="CAP" device="0603-CAP" value="4.7uf"/>
 </parts>
 <sheets>
 <sheet>
@@ -4250,9 +4250,15 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 </plain>
 <instances>
 <instance part="U1" gate="A" x="284.48" y="78.74"/>
+<instance part="C1" gate="G$1" x="68.58" y="66.04"/>
+<instance part="C2" gate="G$1" x="93.98" y="27.94"/>
+<instance part="C3" gate="G$1" x="93.98" y="48.26"/>
+<instance part="C4" gate="G$1" x="106.68" y="48.26"/>
+<instance part="C5" gate="G$1" x="116.84" y="48.26"/>
 <instance part="C10" gate="G$1" x="259.08" y="111.76" rot="R180"/>
 <instance part="C11" gate="G$1" x="248.92" y="111.76" rot="R180"/>
 <instance part="D1" gate="G$1" x="127" y="53.34"/>
+<instance part="C13" gate="G$1" x="134.62" y="48.26"/>
 <instance part="U2" gate="G$1" x="254" y="226.06"/>
 <instance part="U3" gate="G$1" x="254" y="190.5"/>
 <instance part="U$2" gate="G$1" x="302.26" y="215.9"/>
@@ -4385,12 +4391,6 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 <instance part="C49" gate="G$1" x="106.68" y="20.32"/>
 <instance part="C50" gate="G$1" x="116.84" y="20.32"/>
 <instance part="C51" gate="G$1" x="134.62" y="20.32"/>
-<instance part="C4" gate="G$1" x="106.68" y="48.26"/>
-<instance part="C5" gate="G$1" x="116.84" y="48.26"/>
-<instance part="C6" gate="G$1" x="134.62" y="48.26"/>
-<instance part="C7" gate="G$1" x="93.98" y="45.72"/>
-<instance part="C13" gate="G$1" x="93.98" y="30.48"/>
-<instance part="C14" gate="G$1" x="68.58" y="66.04"/>
 </instances>
 <busses>
 </busses>
@@ -4399,10 +4399,10 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 <segment>
 <pinref part="D1" gate="G$1" pin="C"/>
 <wire x1="129.54" y1="53.34" x2="134.62" y2="53.34" width="0.1524" layer="91"/>
-<label x="149.86" y="53.34" size="1.778" layer="95"/>
-<pinref part="C6" gate="G$1" pin="1"/>
+<pinref part="C13" gate="G$1" pin="1"/>
 <wire x1="134.62" y1="53.34" x2="147.32" y2="53.34" width="0.1524" layer="91"/>
 <junction x="134.62" y="53.34"/>
+<label x="149.86" y="53.34" size="1.778" layer="95"/>
 </segment>
 <segment>
 <pinref part="U1" gate="A" pin="VDD"/>
@@ -4647,14 +4647,14 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 </net>
 <net name="N$12" class="0">
 <segment>
+<pinref part="C1" gate="G$1" pin="1"/>
 <pinref part="L1" gate="G$1" pin="2"/>
 <wire x1="63.5" y1="71.12" x2="68.58" y2="71.12" width="0.1524" layer="91"/>
+<junction x="68.58" y="71.12"/>
 <wire x1="68.58" y1="71.12" x2="76.2" y2="71.12" width="0.1524" layer="91"/>
 <wire x1="76.2" y1="71.12" x2="76.2" y2="53.34" width="0.1524" layer="91"/>
 <wire x1="76.2" y1="53.34" x2="63.5" y2="53.34" width="0.1524" layer="91"/>
 <pinref part="U$10" gate="G$1" pin="+VIN"/>
-<pinref part="C14" gate="G$1" pin="1"/>
-<junction x="68.58" y="71.12"/>
 </segment>
 </net>
 <net name="+V12" class="0">
@@ -4698,14 +4698,14 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 </segment>
 <segment>
 <wire x1="63.5" y1="40.64" x2="93.98" y2="40.64" width="0.1524" layer="91"/>
-<wire x1="93.98" y1="40.64" x2="93.98" y2="43.18" width="0.1524" layer="91"/>
-<wire x1="93.98" y1="40.64" x2="93.98" y2="35.56" width="0.1524" layer="91"/>
+<pinref part="C3" gate="G$1" pin="2"/>
+<wire x1="93.98" y1="40.64" x2="93.98" y2="45.72" width="0.1524" layer="91"/>
+<pinref part="C2" gate="G$1" pin="1"/>
+<wire x1="93.98" y1="40.64" x2="93.98" y2="33.02" width="0.1524" layer="91"/>
 <junction x="93.98" y="40.64"/>
 <wire x1="93.98" y1="40.64" x2="96.52" y2="40.64" width="0.1524" layer="91"/>
 <label x="96.52" y="40.64" size="1.778" layer="95"/>
 <pinref part="U$10" gate="G$1" pin="COM"/>
-<pinref part="C7" gate="G$1" pin="2"/>
-<pinref part="C13" gate="G$1" pin="1"/>
 </segment>
 <segment>
 <pinref part="U2" gate="G$1" pin="GND"/>
@@ -4729,13 +4729,13 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 <label x="424.18" y="167.64" size="1.778" layer="95"/>
 </segment>
 <segment>
+<pinref part="C1" gate="G$1" pin="2"/>
 <wire x1="68.58" y1="63.5" x2="63.5" y2="63.5" width="0.1524" layer="91"/>
 <pinref part="U$10" gate="G$1" pin="-VIN"/>
 <wire x1="63.5" y1="63.5" x2="63.5" y2="55.88" width="0.1524" layer="91"/>
 <wire x1="68.58" y1="63.5" x2="68.58" y2="60.96" width="0.1524" layer="91"/>
-<label x="68.58" y="58.42" size="1.778" layer="95"/>
-<pinref part="C14" gate="G$1" pin="2"/>
 <junction x="68.58" y="63.5"/>
+<label x="68.58" y="58.42" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="AGND" class="0">
@@ -4775,14 +4775,14 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 <pinref part="C51" gate="G$1" pin="2"/>
 </segment>
 <segment>
+<pinref part="C4" gate="G$1" pin="2"/>
+<pinref part="C5" gate="G$1" pin="2"/>
 <wire x1="106.68" y1="45.72" x2="116.84" y2="45.72" width="0.1524" layer="91"/>
+<pinref part="C13" gate="G$1" pin="2"/>
 <wire x1="134.62" y1="45.72" x2="116.84" y2="45.72" width="0.1524" layer="91"/>
 <junction x="116.84" y="45.72"/>
 <wire x1="116.84" y1="45.72" x2="116.84" y2="40.64" width="0.1524" layer="91"/>
 <label x="116.84" y="38.1" size="1.778" layer="95"/>
-<pinref part="C4" gate="G$1" pin="2"/>
-<pinref part="C5" gate="G$1" pin="2"/>
-<pinref part="C6" gate="G$1" pin="2"/>
 </segment>
 <segment>
 <pinref part="U1" gate="A" pin="AGND"/>
@@ -5007,38 +5007,36 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 </net>
 <net name="V+12" class="0">
 <segment>
-<pinref part="D1" gate="G$1" pin="A"/>
-<label x="109.22" y="53.34" size="1.778" layer="95"/>
+<pinref part="L2" gate="G$1" pin="2"/>
+<pinref part="C3" gate="G$1" pin="1"/>
+<wire x1="91.44" y1="53.34" x2="93.98" y2="53.34" width="0.1524" layer="91"/>
 <pinref part="C4" gate="G$1" pin="1"/>
-<wire x1="106.68" y1="53.34" x2="116.84" y2="53.34" width="0.1524" layer="91"/>
+<wire x1="93.98" y1="53.34" x2="106.68" y2="53.34" width="0.1524" layer="91"/>
+<junction x="93.98" y="53.34"/>
 <pinref part="C5" gate="G$1" pin="1"/>
+<wire x1="106.68" y1="53.34" x2="116.84" y2="53.34" width="0.1524" layer="91"/>
+<junction x="106.68" y="53.34"/>
+<pinref part="D1" gate="G$1" pin="A"/>
 <wire x1="116.84" y1="53.34" x2="124.46" y2="53.34" width="0.1524" layer="91"/>
 <junction x="116.84" y="53.34"/>
-<pinref part="L2" gate="G$1" pin="2"/>
-<wire x1="91.44" y1="53.34" x2="93.98" y2="53.34" width="0.1524" layer="91"/>
-<junction x="106.68" y="53.34"/>
-<pinref part="C7" gate="G$1" pin="1"/>
-<wire x1="93.98" y1="53.34" x2="106.68" y2="53.34" width="0.1524" layer="91"/>
-<wire x1="93.98" y1="53.34" x2="93.98" y2="50.8" width="0.1524" layer="91"/>
-<junction x="93.98" y="53.34"/>
+<label x="109.22" y="53.34" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="V-12" class="0">
 <segment>
+<pinref part="L3" gate="G$1" pin="2"/>
+<pinref part="C2" gate="G$1" pin="2"/>
+<wire x1="91.44" y1="25.4" x2="93.98" y2="25.4" width="0.1524" layer="91"/>
+<wire x1="93.98" y1="25.4" x2="106.68" y2="25.4" width="0.1524" layer="91"/>
+<junction x="93.98" y="25.4"/>
 <pinref part="D2" gate="G$1" pin="C"/>
 <label x="109.22" y="25.4" size="1.778" layer="95"/>
 <pinref part="C49" gate="G$1" pin="1"/>
 <wire x1="106.68" y1="25.4" x2="116.84" y2="25.4" width="0.1524" layer="91"/>
+<junction x="106.68" y="25.4"/>
 <pinref part="C50" gate="G$1" pin="1"/>
 <wire x1="116.84" y1="25.4" x2="124.46" y2="25.4" width="0.1524" layer="91"/>
 <junction x="116.84" y="25.4"/>
-<pinref part="L3" gate="G$1" pin="2"/>
-<wire x1="91.44" y1="25.4" x2="93.98" y2="25.4" width="0.1524" layer="91"/>
-<junction x="106.68" y="25.4"/>
-<pinref part="C13" gate="G$1" pin="2"/>
-<wire x1="93.98" y1="25.4" x2="106.68" y2="25.4" width="0.1524" layer="91"/>
-<wire x1="93.98" y1="27.94" x2="93.98" y2="25.4" width="0.1524" layer="91"/>
-<junction x="93.98" y="25.4"/>
 </segment>
 </net>
 <net name="V5" class="0">
