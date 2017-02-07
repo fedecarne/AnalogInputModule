@@ -1,0 +1,11 @@
+
+- Teensy
+- Converter
+
+- Input buffer stage
+- The input opamp includes the footprints to work as a preamplifier by adding a resistor. 
+- There is also de option to add a capacitor to increase the steepness of the lowpass filter. 
+- It would be even possible to change the input to a high pass filter, and form a bandpass.
+
+- Input Filter
+
