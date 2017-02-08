@@ -168,19 +168,21 @@ void handler(void) {
  
   
   if (myUSB.available()) { // If bytes are available through USB
-    
+    digitalWrite(13,!digitalRead(13));
     CommandByte = myUSB.readByte(); // Read a byte
     if (CommandByte == OpMenuByte) { // The first byte must be 213. Now, read the actual command byte. (Reduces interference from port scanning applications)
       CommandByte = myUSB.readByte(); // Read the command byte (an op code for the operation to execute)
       switch (CommandByte) {
 
         case 72: { // Handshake
+
+            
             myUSB.writeByte(75); // Send 'K' (as in ok)
             myUSB.writeByte(FirmwareVersion); // Send the firmware version
             ConnectedToApp = 1;
             SetDefaultADCSettings();
 
-
+            
             // This initializes values when connecting through bpod
             LoggingDataToSD = 0;
             SendingEventsToBpod = 0;

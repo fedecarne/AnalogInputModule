@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %}
 
-classdef AnalogInObject < handle
+classdef BpodAnalogIn < handle
    
     properties(Constant)
         ValidRanges = {'-10V:10V', '-5V:5V', '-2.5V:2.5V','0V:10V'};
@@ -68,7 +68,8 @@ classdef AnalogInObject < handle
             pause(.1);
             HandShakeOkByte = obj.Port.read(1, 'uint8');
             if HandShakeOkByte == 75
-                obj.firmwareVersion = obj.Port.read(1, 'uint32');
+                obj.FirmwareVersion = obj.Port.read(1, 'uint8');
+                disp('AnalogIn module found.');
             else
                 disp('Error: AnalogIn returned an unexpected handshake signature.')
             end
@@ -83,10 +84,10 @@ classdef AnalogInObject < handle
         
         function setDefaultParams(obj)
             % Loads default parameters and sends them to the device
-            obj.SamplingRate = 1000;% 1Hz-50kHz, affects all channels
-            obj.VoltageRange  = obj.ValidRanges{1};
+            obj.VoltageRange  = {1,obj.ValidRanges{1}};
             obj.ActiveChannels = 1:obj.nChannels;
-            obj.Thresholds = zeros(1,obj.nChannels);
+            obj.SamplingRate = 1000;% 1Hz-50kHz, affects all channels
+            obj.Thresholds = [(1:8)', zeros(obj.nChannels,1)];
             obj.ResetValues = zeros(1,obj.nChannels);
         end
                
@@ -106,6 +107,11 @@ classdef AnalogInObject < handle
             else
                 obj.maxSimultaneousChannels = 4;
             end 
+            
+            Confirmed = obj.Port.read(1, 'uint8');
+            if Confirmed ~= 1
+                error('Error setting output range. Confirm code not returned.');
+            end
         end
         
         function set.ActiveChannels(obj, activechan)
@@ -124,6 +130,7 @@ classdef AnalogInObject < handle
 
             ActiveChannelsByte = auxbyte;
             obj.Port.write(uint8([213 82 ActiveChannelsByte]), 'uint8');
+            
             Confirmed = obj.Port.read(1, 'uint8');
             if Confirmed ~= 1
                 error('Error setting active channels. Confirm code not returned.');
@@ -162,7 +169,9 @@ classdef AnalogInObject < handle
 
             VoltageRangeByte1 = auxbyte1;
             VoltageRangeByte2 = auxbyte2;
+            
             obj.Port.write(uint8([213 83 VoltageRangeByte1 VoltageRangeByte2]), 'uint8');
+            
             Confirmed = obj.Port.read(1, 'uint8');
             if Confirmed ~= 1
                 error('Error setting output range. Confirm code not returned.');
@@ -181,20 +190,21 @@ classdef AnalogInObject < handle
             %           7,  -5];
             
             Channels = value(:,1); 
-            Thr = value(:,2);
+            %Thr = value(:,2);
             
             % Add validation
             % ...
             
             % Set non-mentioned channels to 0
             Thr = zeros(8,1);
-            for i=1:length(ParamChannel)
+            for i=1:length(Thr)
                 Thr(Channels(i)) = Thr(i);
             end
             
             %Rescale thresholds according to voltage range.
             RawThresholds = ScaleValue('toRaw',Thr,obj.VoltageRange);
             obj.Port.write(uint8([213 67]), 'uint8',RawThresholds', 'uint32');
+            
             Confirmed = obj.Port.read(1, 'uint8');
             if Confirmed ~= 1
                 error('Error setting output range. Confirm code not returned.');

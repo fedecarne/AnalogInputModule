@@ -154,7 +154,8 @@ void handler(void) {
 
     BpodCommandByte = Serial1.read();
       switch (BpodCommandByte) {
-      
+
+     
        case 9: { // Start logging data
 
             //Best would be to have a function to open the file firs
@@ -175,10 +176,18 @@ void handler(void) {
   if (myUSB.available()) { // If bytes are available through USB
     
     CommandByte = myUSB.readByte(); // Read a byte
+
+    digitalWrite(13,~digitalRead(13));
+    
     if (CommandByte == OpMenuByte) { // The first byte must be 213. Now, read the actual command byte. (Reduces interference from port scanning applications)
       CommandByte = myUSB.readByte(); // Read the command byte (an op code for the operation to execute)
+
+      
+
       switch (CommandByte) {
 
+        digitalWrite(13,~digitalRead(13));
+        
         case 72: { // Handshake
             myUSB.writeByte(75); // Send 'K' (as in ok)
             myUSB.writeByte(FirmwareVersion); // Send the firmware version
@@ -195,51 +204,7 @@ void handler(void) {
           } break;
 
         case 73: { // Program the module - total program (can be faster than item-wise, if many parameters have changed)
-            /*
-              // Whatever programming to load
-              for (int x = 0; x < 4; x++) { // Read timing parameters (4 byte integers)
-                Phase1Duration[x] = SerialReadLong();
-                InterPhaseInterval[x] = SerialReadLong();
-                Phase2Duration[x] = SerialReadLong();
-                InterPulseInterval[x] = SerialReadLong();
-                BurstDuration[x] = SerialReadLong();
-                BurstInterval[x] = SerialReadLong();
-                PulseTrainDuration[x] = SerialReadLong();
-                PulseTrainDelay[x] = SerialReadLong();
-              }
-              TriggerMode[0] = SerialReadByte(); // Read bytes that set interpretation of trigger channel voltage
-              TriggerMode[1] = SerialReadByte();
-              SerialUSB.write(1); // Send confirm byte
-
-              //Update ADC settngs
-              dacWrite(DACValues);
-              } break;
-
-              case 74: { // Program one parameter
-              inByte2 = SerialReadByte();
-              inByte3 = SerialReadByte(); // inByte3 = channel (1-4)
-              inByte3 = inByte3 - 1; // Convert channel for zero-indexing
-              switch (inByte2) {
-                case 1: {IsBiphasic[inByte3] = SerialReadByte();} break;
-                case 2: {Phase1Voltage[inByte3] = SerialReadShort();} break;
-                case 3: {Phase2Voltage[inByte3] = SerialReadShort();} break;
-                case 4: {Phase1Duration[inByte3] = SerialReadLong();} break;
-                case 5: {InterPhaseInterval[inByte3] = SerialReadLong();} break;
-                case 6: {Phase2Duration[inByte3] = SerialReadLong();} break;
-                case 7: {InterPulseInterval[inByte3] = SerialReadLong();} break;
-                case 8: {BurstDuration[inByte3] = SerialReadLong();} break;
-                case 9: {BurstInterval[inByte3] = SerialReadLong();} break;
-                case 10: {PulseTrainDuration[inByte3] = SerialReadLong();} break;
-                case 11: {PulseTrainDelay[inByte3] = SerialReadLong();} break;
-                case 12: {inByte4 = SerialReadByte(); TriggerAddress[0][inByte3] = inByte4;} break;
-                case 13: {inByte4 = SerialReadByte(); TriggerAddress[1][inByte3] = inByte4;} break;
-                case 14: {CustomTrainID[inByte3] = SerialReadByte();} break;
-                case 15: {CustomTrainTarget[inByte3] = SerialReadByte();} break;
-                case 16: {CustomTrainLoop[inByte3] = SerialReadByte();} break;
-                case 17: {RestingVoltage[inByte3] = SerialReadShort();} break;
-                case 128: {TriggerMode[inByte3] = SerialReadByte();} break;
-              }
-            */
+            
             myUSB.writeByte(1); // Send confirm byte
           } break;
 
@@ -261,12 +226,14 @@ void handler(void) {
           } break;
 
         case 83: { // Select ADC Voltage range
-
+            
             byte VoltageRangeByte1 = myUSB.readByte();
             byte VoltageRangeByte2 = myUSB.readByte(); 
 
             SetVoltageRange(VoltageRangeByte1,VoltageRangeByte2);
-
+            
+            myUSB.writeUint8(1); // Acknowledge
+            
           } break;
 
         case 82: { // Select active channels
@@ -282,6 +249,8 @@ void handler(void) {
                 k++;
               }
             }
+
+            myUSB.writeUint8(1); // Acknowledge
                       
           } break;
             
@@ -335,7 +304,8 @@ void handler(void) {
             for (int i = 0; i < 8; i++) {
               ThresholdValue[i] = myUSB.readUint32();
             }
-            
+
+          myUSB.writeUint8(1); // Acknowledge
           } break;
 
           case 68: { // Start logging data
@@ -369,6 +339,9 @@ void handler(void) {
             Timer3.stop();
             Timer3.setPeriod((unsigned long)samplingPeriod);
             Timer3.start();
+            
+            myUSB.writeUint8(1); // Acknowledge
+            
             
           } break;
 
@@ -546,11 +519,6 @@ void SendThresholdCrossingEvents(unsigned long data[]){
     
     if (triggered[ActiveChannelsList[i]]==0){
       if (data[i]>ThresholdValue[ActiveChannelsList[i]]){
-
-
-        if (i==7){
-          digitalWrite(13, HIGH); 
-        }
         
         Serial1.write(ActiveChannelsList[i]+1);
         triggered[ActiveChannelsList[i]] = 1;
@@ -558,12 +526,6 @@ void SendThresholdCrossingEvents(unsigned long data[]){
     } else{
       //if (data[i]<ThresholdValue[ActiveChannelsList[i]]){
       if (data[i]<ResetValue[ActiveChannelsList[i]]){
-
-
-        if (i==7){
-          digitalWrite(13, LOW); 
-        }
-
 
         triggered[ActiveChannelsList[i]] = 0;
       }
