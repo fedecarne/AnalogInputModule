@@ -3830,6 +3830,8 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 <part name="R3" library="SparkFun-Resistors" deviceset="RESISTOR" device="0603" value="22"/>
 <part name="D3" library="diode" deviceset="MBR0520LT" device=""/>
 <part name="D1" library="diode" deviceset="MBR0520LT" device=""/>
+<part name="J9" library="SparkFun-Connectors" deviceset="M02" device="3.5MM"/>
+<part name="J10" library="SparkFun-Connectors" deviceset="M02" device="3.5MM"/>
 </parts>
 <sheets>
 <sheet>
@@ -3973,6 +3975,8 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 <instance part="R3" gate="G$1" x="353.06" y="76.2"/>
 <instance part="D3" gate="G$1" x="127" y="53.34"/>
 <instance part="D1" gate="G$1" x="127" y="25.4" rot="R180"/>
+<instance part="J9" gate="G$1" x="342.9" y="127"/>
+<instance part="J10" gate="G$1" x="342.9" y="114.3"/>
 </instances>
 <busses>
 </busses>
@@ -4318,6 +4322,16 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 <label x="68.58" y="58.42" size="1.778" layer="95"/>
 <pinref part="C14" gate="G$1" pin="2"/>
 <junction x="68.58" y="63.5"/>
+</segment>
+<segment>
+<pinref part="J10" gate="G$1" pin="1"/>
+<wire x1="350.52" y1="114.3" x2="353.06" y2="114.3" width="0.1524" layer="91"/>
+<wire x1="353.06" y1="114.3" x2="353.06" y2="109.22" width="0.1524" layer="91"/>
+</segment>
+<segment>
+<pinref part="J9" gate="G$1" pin="1"/>
+<wire x1="350.52" y1="127" x2="353.06" y2="127" width="0.1524" layer="91"/>
+<wire x1="353.06" y1="127" x2="353.06" y2="121.92" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="AGND" class="0">
@@ -5171,6 +5185,22 @@ Source: http://www.analog.com/static/imported-files/data_sheets/AD8597_8599.pdf<
 <wire x1="129.54" y1="109.22" x2="139.7" y2="109.22" width="0.1524" layer="91"/>
 <wire x1="129.54" y1="106.68" x2="129.54" y2="109.22" width="0.1524" layer="91"/>
 <junction x="129.54" y="109.22"/>
+</segment>
+</net>
+<net name="N$18" class="0">
+<segment>
+<pinref part="J10" gate="G$1" pin="2"/>
+<pinref part="U$9" gate="G$1" pin="23/A9/T/PWM"/>
+<wire x1="350.52" y1="116.84" x2="360.68" y2="116.84" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$19" class="0">
+<segment>
+<pinref part="J9" gate="G$1" pin="2"/>
+<wire x1="350.52" y1="129.54" x2="355.6" y2="129.54" width="0.1524" layer="91"/>
+<wire x1="355.6" y1="129.54" x2="355.6" y2="119.38" width="0.1524" layer="91"/>
+<pinref part="U$9" gate="G$1" pin="22/A8/T/PWM"/>
+<wire x1="355.6" y1="119.38" x2="360.68" y2="119.38" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>
