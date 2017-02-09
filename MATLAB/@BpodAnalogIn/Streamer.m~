@@ -20,9 +20,6 @@ AinStreamer.Figure = figure('Name','AnalogModule Streamer',...
                                      'Position',[1090,650,820,400],...
                                      'CloseRequestFcn',{@(hpb,eventdata)CloseReq(hpb,eventdata,guidata(hpb),obj)});
 
-set(gcf,'toolbar','figure');
-% set(gcf,'menubar','figure');
-
 tabgp = uitabgroup('Position',[0.01,0.1,0.7,0.9],'SelectionChangedFcn',{@(hpb,eventdata)TabChange_Callback(hpb,eventdata,guidata(hpb),obj)});
 Signal_tab = uitab(tabgp,'Title','Signal','BackgroundColor',0.52*[1 1 1]);
 Event_tab = uitab(tabgp,'Title','Events','BackgroundColor',0.52*[1 1 1]);
@@ -437,16 +434,16 @@ function timerCallback(~,~,Tab,obj)
                     AinStreamer.Signal.Axis.XLim = [AinStreamer.T-AinStreamer.TimeWindow AinStreamer.T];
                 end
 
-%                 switch AinStreamer.SelectedRange
-%                     case 4
-%                         AinStreamer.Signal.Axis.YLim = [0 10];
-%                     case 3
-%                         AinStreamer.Signal.Axis.YLim = [-2.5 2.5];
-%                     case 2
-%                         AinStreamer.Signal.Axis.YLim = [-5 5];
-%                     case 1
-%                         AinStreamer.Signal.Axis.YLim = [-10 10];
-%                 end
+                switch AinStreamer.SelectedRange
+                    case 4
+                        AinStreamer.Signal.Axis.YLim = [0 10];
+                    case 3
+                        AinStreamer.Signal.Axis.YLim = [-2.5 2.5];
+                    case 2
+                        AinStreamer.Signal.Axis.YLim = [-5 5];
+                    case 1
+                        AinStreamer.Signal.Axis.YLim = [-10 10];
+                end
 
                 drawnow
                 AinStreamer.handles.Value_txt.FontSize = 40;
@@ -640,7 +637,7 @@ AinStreamer.CurrentWindow = hObject.SelectedTab.Title;
                 'StartDelay',0,                 ...
                 'TasksToExecute',inf,           ...
                 'ExecutionMode','fixedSpacing', ...
-                'TimerFcn',{@timerCallback,'Signal',obj});
+                'TimerFcn',{@timerCallback,'Signal'});
             
             % Start sending signal
             disp('start/stop')
@@ -669,7 +666,7 @@ AinStreamer.CurrentWindow = hObject.SelectedTab.Title;
                 'StartDelay',0,                 ...
                 'TasksToExecute',inf,           ...
                 'ExecutionMode','fixedSpacing', ...
-                'TimerFcn',{@timerCallback,'Events',obj});
+                'TimerFcn',{@timerCallback,'Events'});
 
             
             %Start sending events
@@ -684,20 +681,14 @@ end
 
 function SetThresholds_Callback(~,~,~,obj)
 
-    global AinStreamer
-    
     for i=1:8
-        AinStreamer.CurrentThresholds(i) = str2num(AinStreamer.handles.Threshold_edt(i).String);
-        AinStreamer.CurrentResetValues(i) = str2num(AinStreamer.handles.ResetValues_edt(i).String);
+        Ain.CurrentThresholds(i) = str2num(AnalogModuleStreamer.handles.Threshold_edt(i).String);
+        AnalogModuleStreamer.CurrentResetValues(i) = str2num(AnalogModuleStreamer.handles.ResetValues_edt(i).String);
     end
 
-    %Send Thresholds
-    %flush(obj.Port)
-    obj.Thresholds = [(1:8)' AinStreamer.CurrentThresholds']; %Thresholds in Volts
-    
-    %flush(obj.Port)
-    obj.ResetValues = [(1:8)', AinStreamer.CurrentResetValues']; %Thresholds in Volts
-end
+%Send Thresholds
+ProgramAnalogModuleParam('Thresholds',1:8,AnalogModuleStreamer.CurrentThresholds'); %Thresholds in Volts
+ProgramAnalogModuleParam('ResetValues',1:8,AnalogModuleStreamer.CurrentResetValues'); %Thresholds in Volts
 
 
 function CloseReq(hObject, eventdata, handles, obj)

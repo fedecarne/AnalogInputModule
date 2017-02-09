@@ -240,7 +240,6 @@ classdef BpodAnalogIn < handle
             RawResetValues = obj.ScaleValue('toRaw',ResetValues,obj.VoltageRange);
             obj.Port.write(uint8([213 64]), 'uint8',RawResetValues', 'uint32');
             
-            flush(obj.Port)
             Confirmed = obj.Port.read(1, 'uint8');
             if Confirmed ~= 1
                 error('Error setting output range. Confirm code not returned.');

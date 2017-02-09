@@ -9,7 +9,7 @@
 // and copy it to your /Arduino/Libraries folder.
 // The DueTimer library is open source, and protected by the MIT License.
 
-// 2. Thanks firmware uses the sdFat library, developed by Bill Greiman. (Thanks Bill!!)
+// 2. This firmware uses the sdFat library, developed by Bill Greiman. (Thanks Bill!!)
 // Download it from here: https://github.com/greiman/SdFat
 // and copy it to your /Arduino/Libraries folder.
 
@@ -177,16 +177,12 @@ void handler(void) {
     
     CommandByte = myUSB.readByte(); // Read a byte
 
-    digitalWrite(13,~digitalRead(13));
+//    digitalWrite(13,~digitalRead(13));
     
     if (CommandByte == OpMenuByte) { // The first byte must be 213. Now, read the actual command byte. (Reduces interference from port scanning applications)
-      CommandByte = myUSB.readByte(); // Read the command byte (an op code for the operation to execute)
-
-      
+      CommandByte = myUSB.readByte(); // Read the command byte (an op code for the operation to execute)      
 
       switch (CommandByte) {
-
-        digitalWrite(13,~digitalRead(13));
         
         case 72: { // Handshake
             myUSB.writeByte(75); // Send 'K' (as in ok)
@@ -297,6 +293,7 @@ void handler(void) {
               ResetValue[i] = myUSB.readUint32();
             }
             
+            myUSB.writeUint8(1); // Acknowledge
           } break;
 
           case 67: { // Set thresholds
@@ -305,7 +302,8 @@ void handler(void) {
               ThresholdValue[i] = myUSB.readUint32();
             }
 
-          myUSB.writeUint8(1); // Acknowledge
+            myUSB.writeUint8(1); // Acknowledge
+          
           } break;
 
           case 68: { // Start logging data
@@ -341,7 +339,7 @@ void handler(void) {
             Timer3.start();
             
             myUSB.writeUint8(1); // Acknowledge
-            
+            digitalWrite(13,HIGH);
             
           } break;
 
