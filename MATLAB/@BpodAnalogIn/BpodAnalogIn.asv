@@ -35,7 +35,6 @@ classdef BpodAnalogIn < handle
         Thresholds
         ResetValues
         StreamChannel = 1;
-        GUIhandles
     end
     
     properties (SetAccess = protected)
@@ -147,9 +146,9 @@ classdef BpodAnalogIn < handle
             %3: '-2.5V - 2.5V'
             %4: '0V - 10V'
         
-            % Expects: {[1,2],'-10V:10V',[3,5],'-2.5V:2.5V'}
-            
-            VoltageRangeIndex = ones(1,8);
+            % Expects: {1,'-10V-10V'; 3,'-2.5V-2.5V'; 7,'0V-10V'};
+            % or {[1,2],'-10V-10V',[3,5],'-2.5V-2.5V'}
+            RangeIndex = nan(1,8);
             for i=1:size(value,1)
                 Channels = value{i,1}; 
                 RangeString = value(i,2);
@@ -157,16 +156,16 @@ classdef BpodAnalogIn < handle
                 if isempty(RangeIndex)
                     error(['Invalid range specified: ' RangeString '. Valid ranges are: ' obj.ValidRanges]);
                 end
-                VoltageRangeIndex(Channels) = RangeIndex;
+                RangeIndex(Channels) = RangeIndex;
             end
                 
             auxbyte1=0;
             auxbyte2=0;
-            for i=1:size(Channels,2)
+            for i=1:size(Channels)
                 if Channels(i)<5
-                    auxbyte1 = bitor((VoltageRangeIndex(i)-1)*2^(2*(4-Channels(i))),auxbyte1);
+                    auxbyte1 = bitor((RangeIndex(i)-1)*2^(2*(4-Channels(i))),auxbyte1);
                 else
-                    auxbyte2 = bitor((VoltageRangeIndex(i)-1)*2^(2*(8-Channels(i))),auxbyte2);
+                    auxbyte2 = bitor((RangeIndex(i)-1)*2^(2*(8-Channels(i))),auxbyte2);
                 end
             end
 
@@ -181,14 +180,8 @@ classdef BpodAnalogIn < handle
             end
             
             obj.VoltageRange = obj.ValidRanges(ones(8,1));
-            for i=1:size(value,1)
-                Channels = value{i,1}; 
-                RangeString = value(i,2);
-                RangeIndex = find(strcmp(RangeString, obj.ValidRanges),1);
-                if isempty(RangeIndex)
-                    error(['Invalid range specified: ' RangeString '. Valid ranges are: ' obj.ValidRanges]);
-                end
-                obj.VoltageRange(Channels) = obj.ValidRanges(RangeIndex(i));
+            for i=1:size(Channels)
+                obj.VoltageRange(Channels(i)) = obj.ValidRanges(RangeIndex(i));
             end
         end
         
@@ -349,10 +342,10 @@ classdef BpodAnalogIn < handle
             nActiveChannels = size(obj.ActiveChannels,2);
             y = nan(nActiveChannels,size(rawdata,2)/(nActiveChannels+1));
             for i=1:nActiveChannels
-                x = obj.ScaleTime(rawdata(1:nActiveChannels+1:end),obj.SamplingRate);
+                x = ScaleTime(rawdata(1:nActiveChannels+1:end),obj.SamplingRate);
                 d = rawdata(i+1:nActiveChannels+1:end);
                 zerofill = size(y,2)-size(d,2);
-                y(i,:) = obj.ScaleValue('toVolts',[d zeros(1,zerofill)],obj.VoltageRange(obj.ActiveChannels(i)));
+                y(i,:) = ScaleValue('toVolts',[d zeros(1,zerofill)],obj.VoltageRange(obj.ActiveChannels(i)));
             end
             r.x = x;
             r.y = y;
@@ -536,8 +529,7 @@ classdef BpodAnalogIn < handle
                     case 1 %'-10V - 10V'
                         switch Action
                             case 'toVolts'
-                                %ValueOut(i,:) = double(ValueIn(i,:)) * 20/16384.000 - 10.0 - 0.022;
-                                ValueOut(i,:) = 0.001229195496673*double(ValueIn(i,:)) - 10.010878719261370;
+                                ValueOut(i,:) = double(ValueIn(i,:)) * 20/16384.000 - 10.0 - 0.022;
                             case 'toRaw'
                                 ValueOut(i,:) = uint32((ValueIn(i,:)+10.0)*16384.00/20);
                         end

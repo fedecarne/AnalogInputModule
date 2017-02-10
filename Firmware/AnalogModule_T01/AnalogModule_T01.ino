@@ -176,8 +176,6 @@ void handler(void) {
   if (myUSB.available()) { // If bytes are available through USB
     
     CommandByte = myUSB.readByte(); // Read a byte
-
-//    digitalWrite(13,~digitalRead(13));
     
     if (CommandByte == OpMenuByte) { // The first byte must be 213. Now, read the actual command byte. (Reduces interference from port scanning applications)
       CommandByte = myUSB.readByte(); // Read the command byte (an op code for the operation to execute)      
@@ -219,10 +217,13 @@ void handler(void) {
               ChannelToStream = 0;
             }
 
+            myUSB.writeUint8(1); // Acknowledge
           } break;
 
         case 83: { // Select ADC Voltage range
-            
+
+            digitalWrite(13,!digitalRead(13));
+                        
             byte VoltageRangeByte1 = myUSB.readByte();
             byte VoltageRangeByte2 = myUSB.readByte(); 
 
@@ -339,7 +340,7 @@ void handler(void) {
             Timer3.start();
             
             myUSB.writeUint8(1); // Acknowledge
-            digitalWrite(13,HIGH);
+            
             
           } break;
 
