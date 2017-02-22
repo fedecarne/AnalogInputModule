@@ -31,7 +31,8 @@ for i=1:size(ValueIn,1)
         case 1 %'-10V - 10V'
             switch Action
                 case 'toVolts'
-                    ValueOut(i,:) = double(ValueIn(i,:)) * 20/16384.000 - 10.0 - 0.022;
+                    %ValueOut(i,:) = double(ValueIn(i,:)) * 20/16384.000 - 10.0 - 0.022;
+                    ValueOut(i,:) = double(ValueIn(i,:)) * 20/2^12 - 10.0 - 0.022;
                 case 'toRaw'
                     ValueOut(i,:) = uint32((ValueIn(i,:)+10.0)*16384.00/20);
             end

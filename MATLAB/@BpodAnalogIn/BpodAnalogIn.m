@@ -73,18 +73,18 @@ classdef BpodAnalogIn < handle
             HandShakeOkByte = obj.Port.read(1, 'uint8');
             if HandShakeOkByte == 75
                 obj.FirmwareVersion = obj.Port.read(1, 'uint8');
-                disp('AnalogIn module found.');
+                disp(['AnalogIn module V' num2str(obj.FirmwareVersion) ' found.']);
             else
                 disp('Error: AnalogIn returned an unexpected handshake signature.')
             end
             
-            obj.setDefaultParams;
+            %obj.setDefaultParams;
         end
        
         function setDefaultParams(obj)
             % Loads default parameters and sends them to the device
             obj.VoltageRange  = {1,obj.ValidRanges{1}};
-            obj.SamplingRate = 1000;% 1Hz-50kHz, affects all channels
+            obj.SamplingRate = 1000;%
             obj.ActiveChannels = 1:obj.nChannels;            
             obj.Thresholds = [(1:8)', zeros(obj.nChannels,1)];
             obj.ResetValues = [(1:8)', zeros(obj.nChannels,1)];
@@ -96,7 +96,7 @@ classdef BpodAnalogIn < handle
                 error(['Error setting sampling rate: valid rates are in range: [' num2str(obj.ValidSamplingRates) '] Hz'])
             end
             
-            SamplingPeriodMicroseconds = (1/sf)*1000000;        
+            SamplingPeriodMicroseconds = (1/sf)*1000000;
             obj.Port.write(uint8([213 75]), 'uint8', SamplingPeriodMicroseconds,'uint32');
             obj.SamplingRate = sf;
             
@@ -109,11 +109,6 @@ classdef BpodAnalogIn < handle
 %             else
 %                 obj.maxSimultaneousChannels = 4;
 %             end 
-            
-            Confirmed = obj.Port.read(1, 'uint8');
-            if Confirmed ~= 1
-                error('Error setting output range. Confirm code not returned.');
-            end
         end
         
         function set.ActiveChannels(obj, activechan)
@@ -162,23 +157,21 @@ classdef BpodAnalogIn < handle
                 
             auxbyte1=0;
             auxbyte2=0;
-            for i=1:size(Channels,2)
-                if Channels(i)<5
-                    auxbyte1 = bitor((VoltageRangeIndex(i)-1)*2^(2*(4-Channels(i))),auxbyte1);
+            for i=1:length(Channels)
+                if i<5
+                    auxbyte1 = bitor((VoltageRangeIndex(i)-1)*2^(2*(4-i)),auxbyte1);
                 else
-                    auxbyte2 = bitor((VoltageRangeIndex(i)-1)*2^(2*(8-Channels(i))),auxbyte2);
+                    auxbyte2 = bitor((VoltageRangeIndex(i)-1)*2^(2*(8-i)),auxbyte2);
                 end
             end
 
             VoltageRangeByte1 = auxbyte1;
             VoltageRangeByte2 = auxbyte2;
             
-            obj.Port.write(uint8([213 83 VoltageRangeByte1 VoltageRangeByte2]), 'uint8');
             
-            Confirmed = obj.Port.read(1, 'uint8');
-            if Confirmed ~= 1
-                error('Error setting output range. Confirm code not returned.');
-            end
+            flush(obj.Port);
+            
+            obj.Port.write(uint8([213 83 VoltageRangeByte1 VoltageRangeByte2]), 'uint8');
             
             obj.VoltageRange = obj.ValidRanges(ones(8,1));
             for i=1:size(value,1)
@@ -218,11 +211,6 @@ classdef BpodAnalogIn < handle
             RawThresholds = obj.ScaleValue('toRaw',Thresholds,obj.VoltageRange);
             obj.Port.write(uint8([213 67]), 'uint8',RawThresholds', 'uint32');
             
-            Confirmed = obj.Port.read(1, 'uint8');
-            if Confirmed ~= 1
-                error('Error setting output range. Confirm code not returned.');
-            end
-            
             obj.Thresholds = zeros(8,1);
             for i=1:size(Channels)
                 obj.Thresholds(Channels(i)) = Thresholds(i);
@@ -254,11 +242,6 @@ classdef BpodAnalogIn < handle
             RawResetValues = obj.ScaleValue('toRaw',ResetValues,obj.VoltageRange);
             obj.Port.write(uint8([213 64]), 'uint8',RawResetValues', 'uint32');
             
-            Confirmed = obj.Port.read(1, 'uint8');
-            if Confirmed ~= 1
-                error('Error setting output range. Confirm code not returned.');
-            end
-            
             obj.ResetValues = zeros(8,1);
             for i=1:size(Values)
                 obj.ResetValues(Channels(i)) = Values(i);
@@ -272,12 +255,7 @@ classdef BpodAnalogIn < handle
             
             %Rescale thresholds according to voltage range.    
             obj.Port.write(uint8([213 63 Channel]), 'uint8');
-            
-            Confirmed = obj.Port.read(1, 'uint8');
-            if Confirmed ~= 1
-                error('Error setting output range. Confirm code not returned.');
-            end
-            
+            obj.StreamChannel = Channel;
         end
         
         function StartLogging(obj)
@@ -515,31 +493,31 @@ classdef BpodAnalogIn < handle
                     case 4 %'0V - 10V'
                         switch Action
                             case 'toVolts'
-                                ValueOut(i,:) = double(ValueIn(i,:)) * 10/16384.000 - 0.0;
+                                ValueOut(i,:) = double(ValueIn(i,:)) * 10/2^13 - 0.0;
                             case 'toRaw'
-                                ValueOut(i,:) = uint32((ValueIn(i,:)+0.0)*16384/10);
+                                ValueOut(i,:) = uint32((ValueIn(i,:)+0.0)*2^13/10);
                         end
                     case 3 %'-2.5V - 2.5V'
                         switch Action
                             case 'toVolts'
-                                ValueOut(i,:) = double(ValueIn(i,:)) * 5/16384.000 - 2.5;
+                                ValueOut(i,:) = double(ValueIn(i,:)) * 5/2^13 - 2.5;
                             case 'toRaw'
-                                ValueOut(i,:) = uint32((ValueIn(i,:)+2.5)*16384/5);
+                                ValueOut(i,:) = uint32((ValueIn(i,:)+2.5)*2^13/5);
                         end
                     case 2 %'5V - 5V'
                         switch Action
                             case 'toVolts'
-                                ValueOut(i,:) = double(ValueIn(i,:)) * 10/16384.000 - 5.0;
+                                ValueOut(i,:) = double(ValueIn(i,:)) * 10/2^13 - 5.0;
                             case 'toRaw'
-                                ValueOut(i,:) = uint32((ValueIn(i,:)+5.0)*16384/10);
+                                ValueOut(i,:) = uint32((ValueIn(i,:)+5.0)*2^13/10);
                         end
                     case 1 %'-10V - 10V'
                         switch Action
                             case 'toVolts'
-                                %ValueOut(i,:) = double(ValueIn(i,:)) * 20/16384.000 - 10.0 - 0.022;
-                                ValueOut(i,:) = 0.001229195496673*double(ValueIn(i,:)) - 10.010878719261370;
+                                ValueOut(i,:) = double(ValueIn(i,:)) * 20/2^13 - 10.0 - 0.022;
+                                %ValueOut(i,:) = 0.001229195496673*double(ValueIn(i,:)) - 10.010878719261370;
                             case 'toRaw'
-                                ValueOut(i,:) = uint32((ValueIn(i,:)+10.0)*16384.00/20);
+                                ValueOut(i,:) = uint32((ValueIn(i,:)+10.0)*2^13/20);
                         end
                     otherwise
                 end

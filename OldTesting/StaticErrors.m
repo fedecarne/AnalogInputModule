@@ -1,20 +1,24 @@
 close all
 
 % Connect whith AnalogIn Module
-Ain = BpodAnalogIn('COM14');
+conn = AnalogModule('COM13');
 
-% Connect with Bpod Wave Generator
-WaveGen = BpodWavePlayer('COM36');
-WaveGen.TriggerMode = 'Normal';
-WaveGen.SamplingRate = 1000;
-WaveGen.OutputRange = '-10V:10V';
+% Connect with Pulse Pal Wave Generator
+WaveGen=PulsePalWaveGen('COM14');
+WaveGen.playbackMode = 'triggered';
 
-Ain.ActiveChannels = 8;
-Ain.VoltageRange = {(1:8)', '-10V:10V'};
-Ain.SamplingRate = 200;
+ProgramAnalogModuleParam('ActiveChannels', 8);
+ProgramAnalogModuleParam('VoltageRange', 1:8, 1*ones(1,8)); %-10V to 10V
+SamplingPeriod = 5; %in ms
+ProgramAnalogModuleParam('SamplingPeriod', SamplingPeriod);
 
-Duration = 1;
+duration = 1; % seconds
+WaveGen.customWaveformSF = 10;
+WaveGen.customWaveform = 0*zeros(1,duration*WaveGen.customWaveformSF);
+WaveGen.waveform = 'custom';
+
 ChannelToTest = 7;
+PointsToTest = -10:20/(10-1):10;
 PointsToTest = -9.5:20/(10-1):9.5;
 nPoints = size(PointsToTest,2);
 
@@ -27,17 +31,16 @@ figure;
 hold on
 for i=1:nPoints
 
-    WaveGen.loadWaveform(1,PointsToTest(i)*ones(1,Duration*WaveGen.SamplingRate));
-    
+    WaveGen.customWaveform = PointsToTest(i)*ones(1,duration*WaveGen.customWaveformSF);
     pause(0.5);
     
-    WaveGen.play(1,1)
+    trigger(WaveGen)
         
-    Ain.StartLogging;
+    StartLogging;
 
-    pause(Duration-0.2) % stop logging before waveform finishes
+    pause(duration-0.2) % stop logging before waveform finishes
 
-    data = Ani.RetrieveData;
+    data = RetrieveData;
     xdata = data.x;
     ydata = data.y;
     

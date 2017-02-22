@@ -3,8 +3,8 @@ function Streamer(obj)
 %Initialize obj.GUIhandles
 obj.GUIhandles.T=0;
 obj.GUIhandles.TimeWindow = 5; % in seconds
-obj.GUIhandles.TimerPeriod = 0.01;% in seconds
-obj.GUIhandles.SamplingRate = 250; % hardware timer interval in us
+obj.GUIhandles.TimerPeriod = 0.001;% in seconds
+obj.GUIhandles.SamplingRate = 50; % in HZ
 obj.GUIhandles.SelectedChannel = 0;
 obj.GUIhandles.SelectedRange = 1;
 obj.GUIhandles.Running = 0;
@@ -132,7 +132,7 @@ obj.GUIhandles.handles.Range_bg = uibuttongroup('Title','Range',...
                                             'BackgroundColor',0.95*[1 1 1],...
                                             'SelectionChangedFcn',{@(hpb,eventdata)Range_bg_Callback(hpb,eventdata,guidata(hpb),obj)});
    
-Range_str = {'0V - 10V', '-2.5V - 2.5V', '-5V - 5V', '-10V - 10V'};
+Range_str = obj.ValidRanges;
 
 PosY = 0.97;
 for i=1:4
@@ -166,13 +166,13 @@ SamplingRate_txt = uicontrol('Style', 'text',...
                     'BackgroundColor',0.95*[1 1 1],...
                     'FontSize',10);
                 
-obj.GUIhandles.handles.SamplingRate_edt = uicontrol('Style', 'edit',...
-                    'String', '250',...
+obj.GUIhandles.SamplingRate_edt = uicontrol('Style', 'edit',...
+                    'String', num2str(obj.GUIhandles.SamplingRate),...
                     'Units','normalized',...
                     'Position', [0.17 0.025 0.04 0.05],...
                     'FontSize',10,'Callback', {@(hpb,eventdata)SamplingRate_edt_Callback(hpb,eventdata,guidata(hpb),obj)});
                 
-obj.GUIhandles.handles.Message_txt = uicontrol('Style', 'text',...
+obj.GUIhandles.Message_txt = uicontrol('Style', 'text',...
                     'String', '',...
                     'HorizontalAlignment','left',...
                     'ForegroundColor', 'red',...
@@ -227,7 +227,9 @@ SetThresholds_bn(i) = uicontrol(Threshold_bg,'Style',...
                               'Callback', {@(hpb,eventdata)SetThresholds_Callback(hpb,eventdata,guidata(hpb),obj)});
                           
 %Set 0-10V default Voltage range
-obj.VoltageRange = {(1:8)', '0V:10V'};
+flush(obj.Port)
+obj.VoltageRange = {(1:8)', '-10V:10V'};
+obj.SamplingRate = obj.GUIhandles.SamplingRate;
 
 end
 
@@ -260,9 +262,9 @@ function Start_btn_Callback(hObject, eventdata, handles, obj)
             flush(obj.Port)
                         
             %Set sampling period                        
-            SamplingRate = str2double(obj.GUIhandles.handles.SamplingRate_edt.String);            
+            SamplingRate = str2double(obj.GUIhandles.SamplingRate_edt.String);            
             obj.GUIhandles.SamplingRate = SamplingRate; %Arduino Timer period in ms                        
-            obj.SamplingRate = SamplingRate;
+            %obj.SamplingRate = SamplingRate;
 
             %Acquisition timer
             obj.GUIhandles.timer = timer('Name','MyTimer',               ...
@@ -276,10 +278,10 @@ function Start_btn_Callback(hObject, eventdata, handles, obj)
             set(obj.GUIhandles.Signal.Plot,'XData',[],'YData',[]);
 
             % Send 'Select channel' command to the AM
-            Channel_bg_Callback(obj.GUIhandles.handles.Channel_bg,[],[], obj);
+%             Channel_bg_Callback(obj.GUIhandles.handles.Channel_bg,[],[], obj);
 
             % Send 'Select range' command to the AM
-            Range_bg_Callback(obj.GUIhandles.handles.Range_bg, [], [], obj);
+%             Range_bg_Callback(obj.GUIhandles.handles.Range_bg, [], [], obj);
 
             % Send 'Start' command to the AM
             switch obj.GUIhandles.CurrentWindow
@@ -290,7 +292,7 @@ function Start_btn_Callback(hObject, eventdata, handles, obj)
             end
 
             obj.GUIhandles.Running=1;
-            flush(obj.Port)
+            %flush(obj.Port)
             start(obj.GUIhandles.timer);
         end
     end
@@ -342,6 +344,7 @@ switch obj.GUIhandles.CurrentWindow
         end
         
     otherwise % Signal or Event
+        
         stop(obj.GUIhandles.timer);
 
         % Send 'Stop signal' and 'Stop Events' commands
@@ -368,11 +371,11 @@ function SamplingRate_edt_Callback(hObject, eventdata, handles, obj)
         % Send Stop
         obj.StopStreaming;
         
-        obj.Port.write(uint8([213 69]), 'uint8');
+        %obj.Port.write(uint8([213 69]), 'uint8');
     end
 
     % Set sampling period
-    SamplingRate = str2double(obj.GUIhandles.handles.SamplingRate_edt.String);
+    SamplingRate = str2double(obj.GUIhandles.SamplingRate_edt.String);
     obj.GUIhandles.SamplingRate = SamplingRate;
     
     flush(obj.Port)
@@ -396,11 +399,11 @@ end
 function timerCallback(~,~,Tab,obj)
 
     ts = tic;
-%     if AnalogModuleStreamer.SerialPort.bytesAvailable>8
-%         AnalogModuleStreamer.handles.Message_txt.String =  'Too fast...';
-%     else
-%         AnalogModuleStreamer.handles.Message_txt.String =  '';
-%     end
+    if obj.Port.bytesAvailable>8
+        obj.GUIhandles.Message_txt.String =  'Too fast...';
+    else
+        obj.GUIhandles.Message_txt.String =  '';
+    end
     
     % Read
     switch Tab
@@ -408,77 +411,80 @@ function timerCallback(~,~,Tab,obj)
         case 'Signal'
             
             if obj.Port.bytesAvailable>=4
-
+                
                 % Increase time only if there is a byte available
                 obj.GUIhandles.T = obj.GUIhandles.T + 1/obj.GUIhandles.SamplingRate;
-
-                a = obj.ScaleValue('toVolts',obj.Port.read(1, 'uint32'),obj.ValidRanges(obj.GUIhandles.SelectedRange));
-
+                
+                obj.Port.bytesAvailable
+                %dec2bin(obj.Port.read(1, 'uint16'))
+                
+                a = obj.ScaleValue('toVolts',obj.Port.read(1, 'uint16'),obj.ValidRanges(obj.GUIhandles.SelectedRange));
+                
                 xdata = [obj.GUIhandles.Signal.Plot.XData obj.GUIhandles.T];
                 ydata = [obj.GUIhandles.Signal.Plot.YData a];
-
+                
                 set(obj.GUIhandles.Signal.Plot,'XData',xdata,'YData',ydata)
                 obj.GUIhandles.Signal.Axis.XLim = [0 xdata(end)];
-
+                
                 % Constant-size window
                 if obj.GUIhandles.T>=obj.GUIhandles.TimeWindow
-
+                    
                     xdata_win = xdata(xdata>obj.GUIhandles.T-obj.GUIhandles.TimeWindow);
                     ydata_win = ydata(xdata>obj.GUIhandles.T-obj.GUIhandles.TimeWindow);
                     set(obj.GUIhandles.Signal.Plot,'XData',xdata_win,'YData',ydata_win)
                     obj.GUIhandles.Signal.Axis.XLim = [obj.GUIhandles.T-obj.GUIhandles.TimeWindow obj.GUIhandles.T];
                 end
-
-%                 switch obj.GUIhandles.SelectedRange
-%                     case 4
-%                         obj.GUIhandles.Signal.Axis.YLim = [0 10];
-%                     case 3
-%                         obj.GUIhandles.Signal.Axis.YLim = [-2.5 2.5];
-%                     case 2
-%                         obj.GUIhandles.Signal.Axis.YLim = [-5 5];
-%                     case 1
-%                         obj.GUIhandles.Signal.Axis.YLim = [-10 10];
-%                 end
-
+                
+                switch obj.GUIhandles.SelectedRange
+                    case 4
+                        obj.GUIhandles.Signal.Axis.YLim = [0 10];
+                    case 3
+                        obj.GUIhandles.Signal.Axis.YLim = [-2.5 2.5];
+                    case 2
+                        obj.GUIhandles.Signal.Axis.YLim = [-5 5];
+                    case 1
+                        obj.GUIhandles.Signal.Axis.YLim = [-10 10];
+                end
+                
                 drawnow
                 obj.GUIhandles.handles.Value_txt.FontSize = 40;
                 obj.GUIhandles.handles.Value_txt.String = num2str(a,'%2.4f');
             end
             
         case 'Events'
-
+            
             if obj.Port.bytesAvailable>0
-
+                
                 % Increase time only if there is a byte available
                 obj.GUIhandles.T = obj.GUIhandles.T + 1/obj.GUIhandles.SamplingRate;
-
+                
                 % Read Threshold Events
                 a = double(obj.Port.read(1, 'uint8'));
-
-                Events = dec2bin(a,8);
-
+                
+                Events = dec2bin(a,8)
+                
                 xdata = [obj.GUIhandles.Events.Plot(1).XData obj.GUIhandles.T obj.GUIhandles.T nan];
-
+                
                 for i=1:8
-
+                    
                     if Events(i)=='1'
                         ydata = [obj.GUIhandles.Events.Plot(i).YData [(8-i)*2 (8-i)*2+1] nan];
                     else
                         ydata = [obj.GUIhandles.Events.Plot(i).YData nan nan nan];
-                    end 
-
+                    end
+                    
                     set(obj.GUIhandles.Events.Plot(i),'XData',xdata,'YData',ydata);
                     obj.GUIhandles.Events.Axis.XLim = [0 xdata(end-1)];
-
+                    
                     % Constant-size window
                     if obj.GUIhandles.T>=obj.GUIhandles.TimeWindow
                         obj.GUIhandles.Events.Axis.XLim = [obj.GUIhandles.T-obj.GUIhandles.TimeWindow obj.GUIhandles.T];
                     end
-
+                    
                 end
                 drawnow
             end
-        end
+    end
 end
 
 function Channel_bg_Callback(hObject, eventdata, handles, obj)
@@ -519,12 +525,13 @@ function Channel_bg_Callback(hObject, eventdata, handles, obj)
     end
 
     % Send 'Select channel' command to the AM
-    %obj.Port.write(uint8([213 63 obj.GUIhandles.SelectedChannel]), 'uint8');
     obj.StreamChannel = obj.GUIhandles.SelectedChannel;
     
     % if it was running, start again
     if obj.GUIhandles.Running
 
+        flush(obj.Port)
+        start(obj.GUIhandles.timer);
         switch obj.GUIhandles.CurrentWindow
             case 'Signal'
                 obj.StartStreaming('Signal');
@@ -532,7 +539,7 @@ function Channel_bg_Callback(hObject, eventdata, handles, obj)
                 obj.StartStreaming('Events');
         end
 
-        start(obj.GUIhandles.timer);
+        
     end
 
     %Reset Plot
@@ -541,17 +548,7 @@ end
     
 function Range_bg_Callback(hObject, eventdata, handles, obj)
 
-    switch hObject.SelectedObject.String
-        case '0V - 10V'
-            obj.GUIhandles.SelectedRange = 4;
-        case '-2.5V - 2.5V'
-            obj.GUIhandles.SelectedRange = 3;
-        case '-5V - 5V'
-            obj.GUIhandles.SelectedRange = 2;
-        case '-10V - 10V'
-            obj.GUIhandles.SelectedRange = 1;
-        otherwise            
-    end
+    obj.GUIhandles.SelectedRange = find(strcmp(hObject.SelectedObject.String,obj.ValidRanges));
 
     % stop timer
     if isfield(obj.GUIhandles,'timer')
@@ -570,7 +567,7 @@ function Range_bg_Callback(hObject, eventdata, handles, obj)
 
     % Set Voltage range
     obj.VoltageRange = {(1:8)', obj.ValidRanges{1,obj.GUIhandles.SelectedRange}};
-
+    
     % if it was running, start again
     if obj.GUIhandles.Running
         
@@ -598,56 +595,61 @@ obj.GUIhandles.CurrentWindow = hObject.SelectedTab.Title;
         
             case 'Signal'
             
-            stop(obj.GUIhandles.timer);
-             
-            flush(obj.Port)
-            
-            %Stop sending events
-            obj.StopStreaming('Events');
-            
-            %Reset Plot
-            set(obj.GUIhandles.Signal.Plot,'XData',[],'YData',[]);
-            %Acquisition timer
-            obj.GUIhandles.timer = timer('Name','MyTimer',               ...
-                'Period',obj.GUIhandles.TimerPeriod,                    ...
-                'StartDelay',0,                 ...
-                'TasksToExecute',inf,           ...
-                'ExecutionMode','fixedSpacing', ...
-                'TimerFcn',{@timerCallback,'Signal',obj});
-            
-            % Start sending signal
-            obj.StartStreaming('Signal');
+                stop(obj.GUIhandles.timer);
 
-            start(obj.GUIhandles.timer);
-            obj.GUIhandles.Running=1;
-            
-        case 'Events'
-            
-            % Stop reading
-            stop(obj.GUIhandles.timer);
-            
-            flush(obj.Port)
+                %flush(obj.Port)
 
-            %Stop sending signal
-            obj.StopStreaming('Signal');
-            
-            SetThresholds_Callback([],[],[], obj)
-            
-            %Reset Plot
-            set(obj.GUIhandles.Events.Plot,'XData',[],'YData',[]);
+                %Stop sending events
+                obj.StopStreaming('Events');
+
+                %Reset Plot
+                set(obj.GUIhandles.Signal.Plot,'XData',[],'YData',[]);
+                
+                
+                %Acquisition timer
                 obj.GUIhandles.timer = timer('Name','MyTimer',               ...
-                'Period',obj.GUIhandles.TimerPeriod,                    ...
-                'StartDelay',0,                 ...
-                'TasksToExecute',inf,           ...
-                'ExecutionMode','fixedSpacing', ...
-                'TimerFcn',{@timerCallback,'Events',obj});
+                                   'Period',obj.GUIhandles.TimerPeriod,                    ... 
+                                   'StartDelay',0,                 ... 
+                                   'TasksToExecute',inf,           ... 
+                                   'ExecutionMode','fixedSpacing', ...
+                                   'TimerFcn',{@timerCallback,obj.GUIhandles.CurrentWindow,obj}); 
+                           
+                % Start sending signal
+                obj.StartStreaming('Signal');
 
+                flush(obj.Port)
+                start(obj.GUIhandles.timer);
+                obj.GUIhandles.Running=1;
             
-            %Start sending events
-            obj.StartStreaming('Events');
-         
-            start(obj.GUIhandles.timer);
-            obj.GUIhandles.Running=1;
+            case 'Events'
+
+                % Stop reading
+                stop(obj.GUIhandles.timer);
+
+                %flush(obj.Port);
+
+                %Stop sending signal
+                obj.StopStreaming('Signal');
+
+                %SetThresholds_Callback([],[],[], obj);
+
+                %Reset Plot
+                set(obj.GUIhandles.Events.Plot,'XData',[],'YData',[]);
+                
+                %Acquisition timer
+                obj.GUIhandles.timer = timer('Name','MyTimer',               ...
+                                   'Period',obj.GUIhandles.TimerPeriod,                    ... 
+                                   'StartDelay',0,                 ... 
+                                   'TasksToExecute',inf,           ... 
+                                   'ExecutionMode','fixedSpacing', ...
+                                   'TimerFcn',{@timerCallback,obj.GUIhandles.CurrentWindow,obj});
+
+                %Start sending events
+                obj.StartStreaming('Events');
+
+                flush(obj.Port);
+                start(obj.GUIhandles.timer);
+                obj.GUIhandles.Running=1;
         end
     end
 end
@@ -665,20 +667,13 @@ function SetThresholds_Callback(~,~,~,obj)
     end
 
     %Stop streaming
-    switch obj.GUIhandles.CurrentWindow
-        case 'Signal'
-            obj.StopStreaming('Signal');
-        case 'Events'
-            obj.StopStreaming('Events');
-    end
+    obj.StopStreaming();
 
     flush(obj.Port)
     
     %Send Thresholds
-    flush(obj.Port)
     obj.Thresholds = [(1:8)' obj.GUIhandles.CurrentThresholds']; %Thresholds in Volts
 
-    flush(obj.Port)
     obj.ResetValues = [(1:8)', obj.GUIhandles.CurrentResetValues']; %Thresholds in Volts
     
     % if it was running, start again
@@ -696,7 +691,6 @@ function SetThresholds_Callback(~,~,~,obj)
     
     
 end
-
 
 function CloseReq(hObject, eventdata, handles, obj)
     delete(gcf)

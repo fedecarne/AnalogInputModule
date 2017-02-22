@@ -2,50 +2,53 @@ clear all -g
 close all
 
 % Connect whith AnalogIn Module
-conn = AnalogModule('COM13');
+Ain = BpodAnalogIn('COM14');
 
-% Connect with Pulse Pal Wave Generator
-WaveGen=PulsePalWaveGen('COM14');
-WaveGen.playbackMode = 'triggered';
-
-
-ProgramAnalogModuleParam('ActiveChannels', 8);
-ProgramAnalogModuleParam('VoltageRange', 1:8, 1*ones(1,8)); %-10V to 10V
-SamplingPeriod = 0.5; %in ms
-ProgramAnalogModuleParam('SamplingPeriod', SamplingPeriod);
+% Connect with Bpod Wave Generator
+WaveGen = BpodWavePlayer('COM36');
+WaveGen.TriggerMode = 'Normal';
+WaveGen.SamplingRate = 10000;
+WaveGen.OutputRange = '-10V:10V';
 
 
-WaveGen.duration = 1;
-WaveGen.frequency = 50;
-WaveGen.amplitude = 20;
-WaveGen.waveform = 'sine';
-pause(1);
+Ain.ActiveChannels = 8;
+Ain.SamplingRate = 2000;
+Ain.VoltageRange = {1:8, '-10V:10V'};
 
+Duration = 1;
+Frequency = 100;
+Amplitude = 10;
 ChannelToTest = 7;
+
+t = [0:1/WaveGen.SamplingRate:Duration];
+y = Amplitude*sin(2*pi*Frequency*t);
+plot(t,y)
+WaveGen.loadWaveform(1,y);
 
 %%
 close all
+
+WaveGen.play(1,1);
+
+Ain.StartLogging;
+
+pause(Duration-0.1) % stop logging before waveform finishes
+
+data = Ain.RetrieveData;
     
-trigger(WaveGen)
-
-StartLogging;
-
-pause(WaveGen.duration-0.1) % stop logging before waveform finishes
-
-data = RetrieveData;
 xdata = data.x;
 ydata = data.y;
 
-initial_delay = 100; %in ms
-y = ydata(1,ceil(initial_delay/SamplingPeriod):end);
-x = xdata(1,ceil(initial_delay/SamplingPeriod):end);
+initial_delay = 0.100; %in ms
+y = ydata(1,ceil(initial_delay*Ain.SamplingRate):end);
+x = xdata(1,ceil(initial_delay*Ain.SamplingRate):end);
 
 
 %% plotting
 width = 4;
 height = 3;
 
-f1 = figure('Visible','off');
+f1 = figure%('Visible','off');
 set(gcf, 'PaperUnits', 'inches')
 set(gcf, 'PaperSize',[width height])
 set(gcf, 'PaperPosition',[0 0 width height])
@@ -55,14 +58,14 @@ axis([x(1) x(100) -12 12])
 ylabel('Signal (V)')
 xlabel('Time (s)')
 print('-dpng', 'sine.png','-r300');
-close
+%close
     
 
-f2 = figure('Visible','off');
+f2 = figure%('Visible','off');
 set(gcf, 'PaperUnits', 'inches')
 set(gcf, 'PaperSize',[width height])
 set(gcf, 'PaperPosition',[0 0 width height])
-Fs = 1/SamplingPeriod*1000;
+Fs = Ain.SamplingRate;
 snr(y,Fs);
 grid off
 legend boxoff
@@ -76,7 +79,7 @@ h.Title.String = ['SNR: ' num2str(sn,'%2.0f') ' dB    '...
                   'SINAD: ' num2str(s,'%2.0f') ' dB'];
 h.Title.FontSize=9;
 print('-dpng', 'fourier.png','-r300');
-close
+%close
 
 %%
 
@@ -84,45 +87,37 @@ close
 
 
 Fs = 500:1000:20000;
-nFs = size(Fs,2);
+nFs = size(Fs,2)
 
-WaveGen.duration = 1;
-WaveGen.frequency = 10;
-WaveGen.amplitude = 20;
-WaveGen.waveform = 'sine';
-pause(1);
-
-Fs = 50000;
-WaveGen.duration = 0.;
-nFs = 1;
+Duration = 1;
+Frequency = 10;
+Amplitude = 10;
 
 SNR = nan(1,nFs);
-
 for i=1:nFs
 i
-    SamplingPeriod = 1000/Fs(i);
-    ProgramAnalogModuleParam('SamplingPeriod', SamplingPeriod);
+
+    Ain.SamplingRate = 2000;
+
     pause(0.5);
     
-    trigger(WaveGen)
+    WaveGen.play(1,1)
 
-    StartLogging;
+    Ain.StartLogging;
 
-    pause(WaveGen.duration-0.1) % stop logging before waveform finishes
+    pause(Duration-0.1) % stop logging before waveform finishes
 
-    data = RetrieveData;
+    data = Ain.RetrieveData;
     xdata = data.x;
     ydata = data.y;
 
-    initial_delay = 100; %in ms
-    y = ydata(1,ceil(initial_delay/SamplingPeriod):end);
+    initial_delay = 0.100; %in ms
+    y = ydata(1,ceil(initial_delay*Ain.SamplingRate):end);
 
     SNR(1,i) = snr(y,Fs(i));
     SINAD = sinad(y);
     THD = thd(y);
     
-    [size(ydata,2) (WaveGen.duration-0.1)*Fs(i)]
-    xdata(1)
 end
 
 %% plotting
