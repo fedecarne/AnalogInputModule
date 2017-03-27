@@ -111,7 +111,7 @@ Stop_btn = uicontrol('Style', 'pushbutton',...
                      'Units','normalized','Position', [0.86 0.07 0.1 0.06],...
                      'FontSize',12,'Callback', {@(hpb,eventdata)Stop_btn_Callback(hpb,eventdata,guidata(hpb),obj)});
                  
-obj.GUIhandles.handles.Channel_bg = uibuttongroup('Title','Channel',...
+obj.GUIhandles.Channel_bg = uibuttongroup('Title','Channel',...
                            'BackgroundColor',0.95*[1 1 1],...
                            'Position',[0.72 0.35 0.11 0.35],...
                            'SelectionChangedFcn',{@(hpb,eventdata)Channel_bg_Callback(hpb,eventdata,guidata(hpb),obj)});
@@ -119,7 +119,7 @@ obj.GUIhandles.handles.Channel_bg = uibuttongroup('Title','Channel',...
 PosY = 0.95;
 for i=1:8
     PosY = PosY -0.11;
-    Channel_bn(i) = uicontrol(obj.GUIhandles.handles.Channel_bg,'Style',...
+    Channel_bn(i) = uicontrol(obj.GUIhandles.Channel_bg,'Style',...
                               'radiobutton',...
                               'BackgroundColor',0.95*[1 1 1],...
                               'String',['Channel ' num2str(i-1)],...
@@ -127,7 +127,7 @@ for i=1:8
                               'Position',[0.07 PosY 0.9 0.12]);
 end
 
-obj.GUIhandles.handles.Range_bg = uibuttongroup('Title','Range',...
+obj.GUIhandles.Range_bg = uibuttongroup('Title','Range',...
                                             'Position',[0.72 0.15 0.11 0.2],...
                                             'BackgroundColor',0.95*[1 1 1],...
                                             'SelectionChangedFcn',{@(hpb,eventdata)Range_bg_Callback(hpb,eventdata,guidata(hpb),obj)});
@@ -137,7 +137,7 @@ Range_str = obj.ValidRanges;
 PosY = 0.97;
 for i=1:4
     PosY = PosY -0.21;
-    Range_bn(i) = uicontrol(obj.GUIhandles.handles.Range_bg,'Style',...
+    Range_bn(i) = uicontrol(obj.GUIhandles.Range_bg,'Style',...
                           'radiobutton',...
                           'BackgroundColor',0.95*[1 1 1],...
                           'String',Range_str{i},...
@@ -181,7 +181,7 @@ obj.GUIhandles.Message_txt = uicontrol('Style', 'text',...
                     'BackgroundColor',0.95*[1 1 1],...
                     'FontSize',10);
                  
-obj.GUIhandles.handles.Value_txt = uicontrol('Style', 'text',...
+obj.GUIhandles.Value_txt = uicontrol('Style', 'text',...
                      'String', '-.-',...
                      'Units','normalized',...
                      'Position', [0.72 0.76 0.27 0.19],...
@@ -205,13 +205,13 @@ for i=1:8
                               'Units','normalized',...
                               'Position',[0.005 PosY-0.01 0.2 0.08]);
                           
-    obj.GUIhandles.handles.Threshold_edt(i) = uicontrol(Threshold_bg,'Style',...
+    obj.GUIhandles.Threshold_edt(i) = uicontrol(Threshold_bg,'Style',...
                               'edit',...
                               'String',0,...
                               'Units','normalized',...
                               'Position',[0.25 PosY 0.3 0.08]);
                           
-    obj.GUIhandles.handles.ResetValues_edt(i) = uicontrol(Threshold_bg,'Style',...
+    obj.GUIhandles.ResetValues_edt(i) = uicontrol(Threshold_bg,'Style',...
                               'edit',...
                               'String',0,...
                               'Units','normalized',...
@@ -230,7 +230,7 @@ SetThresholds_bn(i) = uicontrol(Threshold_bg,'Style',...
 flush(obj.Port)
 obj.VoltageRange = {(1:8)', '-10V:10V'};
 obj.SamplingRate = obj.GUIhandles.SamplingRate;
-
+obj.ActiveChannels = 1:8;
 end
 
 function Start_btn_Callback(hObject, eventdata, handles, obj)
@@ -241,14 +241,13 @@ function Start_btn_Callback(hObject, eventdata, handles, obj)
             obj.GUIhandles.Running = 0;
             if obj.GUIhandles.Logging==0
 
-                obj.GUIhandles.handles.Value_txt.FontSize = 14;
-                obj.GUIhandles.handles.Value_txt.String = 'Logging...';
+                obj.GUIhandles.Value_txt.FontSize = 14;
+                obj.GUIhandles.Value_txt.String = {'','Logging...'};
 
                 flush(obj.Port)
 
                 % Start logging
                 obj.StartLogging;
-
                 obj.GUIhandles.Logging = 1;
             end
 
@@ -309,15 +308,15 @@ switch obj.GUIhandles.CurrentWindow
             
             % Send 'Retrieve' command to the AM
             obj.GUIhandles.Logging = 0;
-            obj.GUIhandles.handles.Value_txt.FontSize = 14;
-            obj.GUIhandles.handles.Value_txt.String = 'Retrieving';
+            obj.GUIhandles.Value_txt.FontSize = 14;
+            obj.GUIhandles.Value_txt.String = {'','Retrieving...'};
             
             data = obj.RetrieveData;
             xdata = data.x;
             ydata = data.y;
             
-            obj.GUIhandles.handles.Value_txt.FontSize = 14;
-            obj.GUIhandles.handles.Value_txt.String = 'Retrieved';
+            obj.GUIhandles.Value_txt.FontSize = 14;
+            obj.GUIhandles.Value_txt.String = {'','Done!'};
             
             %clean plots
             for i=1:8
@@ -330,13 +329,13 @@ switch obj.GUIhandles.CurrentWindow
             
             switch obj.GUIhandles.SelectedRange
                 case 1
-                    obj.GUIhandles.Log.Axis.YLim = [0 10];
-                case 2
-                    obj.GUIhandles.Log.Axis.YLim = [-2.5 2.5];
-                case 3
-                    obj.GUIhandles.Log.Axis.YLim = [-5 5];
-                case 4
                     obj.GUIhandles.Log.Axis.YLim = [-10 10];
+                case 2
+                    obj.GUIhandles.Log.Axis.YLim = [-5 5];
+                case 3
+                    obj.GUIhandles.Log.Axis.YLim = [-2.5 2.5];
+                case 4
+                    obj.GUIhandles.Log.Axis.YLim = [0 10];
             end
             
             obj.GUIhandles.Log.Axis.XLim = [xdata(1) xdata(end)];
@@ -447,8 +446,8 @@ function timerCallback(~,~,Tab,obj)
                 end
                 
                 drawnow
-                obj.GUIhandles.handles.Value_txt.FontSize = 40;
-                obj.GUIhandles.handles.Value_txt.String = num2str(a,'%2.4f');
+                obj.GUIhandles.Value_txt.FontSize = 40;
+                obj.GUIhandles.Value_txt.String = num2str(a,'%2.4f');
             end
             
         case 'Events'
@@ -657,8 +656,8 @@ end
 function SetThresholds_Callback(~,~,~,obj)
     
     for i=1:8
-        obj.GUIhandles.CurrentThresholds(i) = str2num(obj.GUIhandles.handles.Threshold_edt(i).String);
-        obj.GUIhandles.CurrentResetValues(i) = str2num(obj.GUIhandles.handles.ResetValues_edt(i).String);
+        obj.GUIhandles.CurrentThresholds(i) = str2num(obj.GUIhandles.Threshold_edt(i).String);
+        obj.GUIhandles.CurrentResetValues(i) = str2num(obj.GUIhandles.ResetValues_edt(i).String);
     end
 
     % stop timer

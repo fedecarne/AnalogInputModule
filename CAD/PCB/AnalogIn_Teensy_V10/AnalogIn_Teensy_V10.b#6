@@ -1021,6 +1021,12 @@ design rules under a new name.
 <element name="D1" library="diode" package="SOD123" value="MBR0520LT" x="41.85" y="40.95" smashed="yes" rot="R270">
 <attribute name="NAME" x="43.65" y="40.05" size="0.8128" layer="25" rot="R90"/>
 </element>
+<element name="J9" library="SparkFun-Connectors" package="SCREWTERMINAL-3.5MM-2" value="" x="82" y="73.2" rot="R180">
+<attribute name="PROD_ID" value="CONN-08399" x="82" y="73.2" size="1.778" layer="27" rot="R180" display="off"/>
+</element>
+<element name="J10" library="SparkFun-Connectors" package="SCREWTERMINAL-3.5MM-2" value="" x="75" y="73.2" rot="R180">
+<attribute name="PROD_ID" value="CONN-08399" x="75" y="73.2" size="1.778" layer="27" rot="R180" display="off"/>
+</element>
 </elements>
 <signals>
 <signal name="VDD">
@@ -1375,6 +1381,8 @@ design rules under a new name.
 <wire x1="48.96" y1="25.06" x2="49.25" y2="25.05" width="0.6096" layer="1"/>
 <wire x1="47.06" y1="22.76" x2="48.54" y2="22.76" width="0.6096" layer="1"/>
 <wire x1="48.54" y1="22.76" x2="48.75" y2="22.75" width="0.6096" layer="1"/>
+<contactref element="J9" pad="1"/>
+<contactref element="J10" pad="1"/>
 </signal>
 <signal name="N$2">
 </signal>
@@ -2111,6 +2119,31 @@ design rules under a new name.
 <wire x1="12.85" y1="21.85" x2="12.85" y2="18.85" width="0.8128" layer="1"/>
 </signal>
 <signal name="N$26">
+</signal>
+<signal name="N$18">
+<contactref element="U$9" pad="31/A12"/>
+<contactref element="J9" pad="2"/>
+<wire x1="71.52" y1="57.09" x2="69.81" y2="57.09" width="0.6096" layer="1"/>
+<wire x1="69.81" y1="57.09" x2="69.3" y2="57.6" width="0.6096" layer="1"/>
+<via x="69.3" y="57.6" extent="1-16" drill="0.6"/>
+<wire x1="69.3" y1="57.6" x2="69.3" y2="67" width="0.6096" layer="16"/>
+<wire x1="69.3" y1="67" x2="70.25" y2="67.95" width="0.6096" layer="16"/>
+<via x="70.25" y="67.95" extent="1-16" drill="0.6"/>
+<wire x1="70.25" y1="67.95" x2="77.55" y2="67.95" width="0.6096" layer="1"/>
+<wire x1="77.55" y1="67.95" x2="78.55" y2="68.95" width="0.6096" layer="1"/>
+<wire x1="78.55" y1="68.95" x2="78.55" y2="73.15" width="0.6096" layer="1"/>
+<wire x1="78.55" y1="73.15" x2="78.5" y2="73.2" width="0.6096" layer="1"/>
+</signal>
+<signal name="N$19">
+<contactref element="U$9" pad="32/A13"/>
+<contactref element="J10" pad="2"/>
+<wire x1="71.52" y1="59.63" x2="68.02" y2="59.63" width="0.6096" layer="1"/>
+<wire x1="68.02" y1="59.63" x2="67.3" y2="60.35" width="0.6096" layer="1"/>
+<via x="67.3" y="60.35" extent="1-16" drill="0.6"/>
+<wire x1="67.3" y1="60.35" x2="67.3" y2="71.8" width="0.6096" layer="16"/>
+<wire x1="67.3" y1="71.8" x2="68.7" y2="73.2" width="0.6096" layer="16"/>
+<via x="68.7" y="73.2" extent="1-16" drill="0.6"/>
+<wire x1="68.7" y1="73.2" x2="71.5" y2="73.2" width="0.6096" layer="1"/>
 </signal>
 </signals>
 </board>

@@ -440,7 +440,6 @@ int16_t readOneChannel(int channel) {
   byte adcDataIn_byte2 = SPI.transfer(0b00000000); // read conversion, also sending 0 as this doesn't matter.
   digitalWrite(adcChipSelectPin, HIGH); // take the Chip Select pin high to de-select the ADC.
   SPI.endTransaction();
-  
   digitalWrite(DebugPin, LOW);
   
   interrupts(); // Enable interupts.
