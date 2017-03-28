@@ -5,7 +5,8 @@ Ain = BpodAnalogIn('COM37');
 WaveGen = BpodWavePlayer('COM36');
 WaveGen.TriggerMode = 'Normal';
 WaveGen.SamplingRate = 10;
-WaveGen.OutputRange = '-10V:10V';
+WaveGen
+.OutputRange = '-10V:10V';
 
 
 Duration = 5;

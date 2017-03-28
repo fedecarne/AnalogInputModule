@@ -61,9 +61,9 @@ classdef BpodAnalogIn < handle
             else
                 PortList = obj.findPulsePal();
                 if ~isempty(PortList)
-                    error(['You must call PulsePalObject with a serial port string argument. Likely serial ports are: ' PortList])
+                    error(['You must call BpodAnalogIn with a serial port string argument. Likely serial ports are: ' PortList])
                 else
-                    error('You must call PulsePalObject with a serial port string argument.')
+                    error('You must call BpodAnalogIn with a serial port string argument.')
                 end
             end
             
@@ -78,7 +78,7 @@ classdef BpodAnalogIn < handle
                 disp('Error: AnalogIn returned an unexpected handshake signature.')
             end
             
-            %obj.setDefaultParams;
+            obj.setDefaultParams;
         end
        
         function setDefaultParams(obj)

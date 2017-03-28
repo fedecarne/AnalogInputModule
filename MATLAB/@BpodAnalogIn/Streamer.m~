@@ -1,24 +1,40 @@
 function Streamer(obj)
 
-global AinStreamer
+%Initialize obj.GUIhandles
+obj.GUIhandles.T=0;
+obj.GUIhandles.TimeWindow = 5; % in seconds
+obj.GUIhandles.TimerPeriod = 0.001;% in seconds
+obj.GUIhandles.SamplingRate = 50; % in HZ
+obj.GUIhandles.xpos = 0; % x-axis position for current time
+obj.GUIhandles.xN = round(obj.GUIhandles.TimeWindow*obj.GUIhandles.SamplingRate); % total amount of data point in time window 
+obj.GUIhandles.ydata = nan(1,obj.GUIhandles.xN);
+obj.GUIhandles.SelectedChannel = 0;
+obj.GUIhandles.SelectedRange = 1;
+obj.GUIhandles.Running = 0;
+obj.GUIhandles.Logging = 0;
+obj.GUIhandles.CurrentWindow = 'Signal';
 
-%Initialize AinStreamer
-AinStreamer.T=0;
-AinStreamer.TimeWindow = 5; % in seconds
-AinStreamer.TimerPeriod = 0.01;% in seconds
-AinStreamer.SamplingRate = 250; % hardware timer interval in us
-AinStreamer.SelectedChannel = 0;
-AinStreamer.SelectedRange = 1;
-AinStreamer.Running = 0;
-AinStreamer.Logging = 0;
-AinStreamer.CurrentWindow = 'Signal';
-
-AinStreamer.Figure = figure('Name','AnalogModule Streamer',...
+obj.GUIhandles.Figure = figure('Name','AnalogModule Streamer',...
                                      'NumberTitle','off',...
                                      'MenuBar','none',...
                                      'Color',0.95*[1 1 1],...
                                      'Position',[1090,650,820,400],...
                                      'CloseRequestFcn',{@(hpb,eventdata)CloseReq(hpb,eventdata,guidata(hpb),obj)});
+
+set(gcf,'toolbar','figure');
+a = findall(gcf);
+set(findall(a,'ToolTipString','Save Figure'),'Visible','Off')
+set(findall(a,'ToolTipString','Print Figure'),'Visible','Off')
+set(findall(a,'ToolTipString','Open File'),'Visible','Off')
+set(findall(a,'ToolTipString','New Figure'),'Visible','Off')
+set(findall(a,'ToolTipString','Rotate 3D'),'Visible','Off')
+set(findall(a,'ToolTipString','Edit Plot'),'Visible','Off')
+set(findall(a,'ToolTipString','Insert Colorbar'),'Visible','Off')
+set(findall(a,'ToolTipString','Insert Legend'),'Visible','Off')
+set(findall(a,'ToolTipString','Link Plot'),'Visible','Off')
+set(findall(a,'ToolTipString','Hide Plot Tools'),'Visible','Off')
+set(findall(a,'ToolTipString','Show Plot Tools and Dock Figure'),'Visible','Off')
+set(findall(a,'ToolTipString','Brush/Select Data'),'Visible','Off')
 
 tabgp = uitabgroup('Position',[0.01,0.1,0.7,0.9],'SelectionChangedFcn',{@(hpb,eventdata)TabChange_Callback(hpb,eventdata,guidata(hpb),obj)});
 Signal_tab = uitab(tabgp,'Title','Signal','BackgroundColor',0.52*[1 1 1]);
@@ -26,16 +42,16 @@ Event_tab = uitab(tabgp,'Title','Events','BackgroundColor',0.52*[1 1 1]);
 Log_tab = uitab(tabgp,'Title','Log','BackgroundColor',0.52*[1 1 1]);
 
 %------------------------------------------------------------------------------
-AinStreamer.Signal.Axis = axes('parent', Signal_tab,...
+obj.GUIhandles.Signal.Axis = axes('parent', Signal_tab,...
                                         'Position',[.09,.1,.88,.83],...
                                         'FontSize',14,...
                                         'Color','k'); 
                                          
-AinStreamer.Signal.Axis.GridColor = [1 1 1];
-grid(AinStreamer.Signal.Axis,'on')                                                                              
+obj.GUIhandles.Signal.Axis.GridColor = [1 1 1];
+grid(obj.GUIhandles.Signal.Axis,'on')                                                                              
                                         
-AinStreamer.Signal.Plot = line(nan,nan,...
-                               'Parent',AinStreamer.Signal.Axis,...
+obj.GUIhandles.Signal.Plot = line(nan,nan,...
+                               'Parent',obj.GUIhandles.Signal.Axis,...
                                'LineStyle','-',...
                                'Marker','.',...
                                'MarkerSize',10,...
@@ -44,21 +60,21 @@ AinStreamer.Signal.Plot = line(nan,nan,...
 
 %------------------------------------------------------------------------------
 %Events tab
-AinStreamer.Events.Axis = axes('parent', Event_tab,...
+obj.GUIhandles.Events.Axis = axes('parent', Event_tab,...
                                 'Position',[.09,.1,.88,.83],...
                                 'FontSize',14,...
                                 'Color','k'); 
                                          
-AinStreamer.Events.Axis.GridColor = [1 1 1];
-grid(AinStreamer.Events.Axis,'on'); 
-AinStreamer.Events.Axis.YLim = [-1 16];
-AinStreamer.Events.Axis.YTick = 0.5:2:14.5;
-AinStreamer.Events.Axis.YTickLabel = {'Ch0','Ch1','Ch2','Ch3','Ch4','Ch5','Ch6','Ch7'};
+obj.GUIhandles.Events.Axis.GridColor = [1 1 1];
+grid(obj.GUIhandles.Events.Axis,'on'); 
+obj.GUIhandles.Events.Axis.YLim = [-1 16];
+obj.GUIhandles.Events.Axis.YTick = 0.5:2:14.5;
+obj.GUIhandles.Events.Axis.YTickLabel = {'Ch0','Ch1','Ch2','Ch3','Ch4','Ch5','Ch6','Ch7'};
              
 c = colormap(lines(8));
 for i=1:8
-    AinStreamer.Events.Plot(i) = line(nan,nan,...
-                                       'Parent',AinStreamer.Events.Axis,...
+    obj.GUIhandles.Events.Plot(i) = line(nan,nan,...
+                                       'Parent',obj.GUIhandles.Events.Axis,...
                                        'LineStyle','-',...
                                        'Color', c(i,:),...
                                        'LineWidth',2);
@@ -67,18 +83,18 @@ end
 
 %------------------------------------------------------------------------------
 %Log tab
-AinStreamer.Log.Axis = axes('parent', Log_tab,...
+obj.GUIhandles.Log.Axis = axes('parent', Log_tab,...
                             'Position',[.09,.1,.88,.83],...
                             'FontSize',14,...
                             'Color','k'); 
                                          
-AinStreamer.Log.Axis.GridColor = [1 1 1];
-grid(AinStreamer.Log.Axis,'on');                                                                           
+obj.GUIhandles.Log.Axis.GridColor = [1 1 1];
+grid(obj.GUIhandles.Log.Axis,'on');                                                                           
              
 c = colormap(parula(8));
 for i=1:8
-    AinStreamer.Log.Plot(i) = line(nan,nan,...
-                                   'Parent',AinStreamer.Log.Axis,...
+    obj.GUIhandles.Log.Plot(i) = line(nan,nan,...
+                                   'Parent',obj.GUIhandles.Log.Axis,...
                                    'LineStyle','-',...
                                    'Marker','.',...
                                    'MarkerSize',10,...
@@ -98,7 +114,7 @@ Stop_btn = uicontrol('Style', 'pushbutton',...
                      'Units','normalized','Position', [0.86 0.07 0.1 0.06],...
                      'FontSize',12,'Callback', {@(hpb,eventdata)Stop_btn_Callback(hpb,eventdata,guidata(hpb),obj)});
                  
-AinStreamer.handles.Channel_bg = uibuttongroup('Title','Channel',...
+obj.GUIhandles.Channel_bg = uibuttongroup('Title','Channel',...
                            'BackgroundColor',0.95*[1 1 1],...
                            'Position',[0.72 0.35 0.11 0.35],...
                            'SelectionChangedFcn',{@(hpb,eventdata)Channel_bg_Callback(hpb,eventdata,guidata(hpb),obj)});
@@ -106,7 +122,7 @@ AinStreamer.handles.Channel_bg = uibuttongroup('Title','Channel',...
 PosY = 0.95;
 for i=1:8
     PosY = PosY -0.11;
-    Channel_bn(i) = uicontrol(AinStreamer.handles.Channel_bg,'Style',...
+    Channel_bn(i) = uicontrol(obj.GUIhandles.Channel_bg,'Style',...
                               'radiobutton',...
                               'BackgroundColor',0.95*[1 1 1],...
                               'String',['Channel ' num2str(i-1)],...
@@ -114,17 +130,17 @@ for i=1:8
                               'Position',[0.07 PosY 0.9 0.12]);
 end
 
-AinStreamer.handles.Range_bg = uibuttongroup('Title','Range',...
+obj.GUIhandles.Range_bg = uibuttongroup('Title','Range',...
                                             'Position',[0.72 0.15 0.11 0.2],...
                                             'BackgroundColor',0.95*[1 1 1],...
                                             'SelectionChangedFcn',{@(hpb,eventdata)Range_bg_Callback(hpb,eventdata,guidata(hpb),obj)});
    
-Range_str = {'0V - 10V', '-2.5V - 2.5V', '-5V - 5V', '-10V - 10V'};
+Range_str = obj.ValidRanges;
 
 PosY = 0.97;
 for i=1:4
     PosY = PosY -0.21;
-    Range_bn(i) = uicontrol(AinStreamer.handles.Range_bg,'Style',...
+    Range_bn(i) = uicontrol(obj.GUIhandles.Range_bg,'Style',...
                           'radiobutton',...
                           'BackgroundColor',0.95*[1 1 1],...
                           'String',Range_str{i},...
@@ -147,19 +163,19 @@ Win_edt = uicontrol('Style', 'edit',...
                     'FontSize',10,'Callback', {@(hpb,eventdata)Win_edt_Callback(hpb,eventdata,guidata(hpb),obj)});
                  
 SamplingRate_txt = uicontrol('Style', 'text',...
-                    'String', 'SampPeriod (ms)',...
+                    'String', 'SamplingRate(Hz)',...
                     'Units','normalized',...
-                    'Position', [0.02 0.01 0.13 0.06],...
+                    'Position', [0.02 0.01 0.15 0.06],...
                     'BackgroundColor',0.95*[1 1 1],...
                     'FontSize',10);
                 
-AinStreamer.handles.SamplingRate_edt = uicontrol('Style', 'edit',...
-                    'String', '250',...
+obj.GUIhandles.SamplingRate_edt = uicontrol('Style', 'edit',...
+                    'String', num2str(obj.GUIhandles.SamplingRate),...
                     'Units','normalized',...
-                    'Position', [0.15 0.025 0.04 0.045],...
+                    'Position', [0.17 0.025 0.04 0.05],...
                     'FontSize',10,'Callback', {@(hpb,eventdata)SamplingRate_edt_Callback(hpb,eventdata,guidata(hpb),obj)});
                 
-AinStreamer.handles.Message_txt = uicontrol('Style', 'text',...
+obj.GUIhandles.Message_txt = uicontrol('Style', 'text',...
                     'String', '',...
                     'HorizontalAlignment','left',...
                     'ForegroundColor', 'red',...
@@ -168,8 +184,8 @@ AinStreamer.handles.Message_txt = uicontrol('Style', 'text',...
                     'BackgroundColor',0.95*[1 1 1],...
                     'FontSize',10);
                  
-AinStreamer.handles.Value_txt = uicontrol('Style', 'text',...
-                     'String', '-.-',...
+obj.GUIhandles.Value_txt = uicontrol('Style', 'text',...
+                     'String', {[];'-.-';[]},...
                      'Units','normalized',...
                      'Position', [0.72 0.76 0.27 0.19],...
                      'ForegroundColor',[1 1 0],...    
@@ -192,13 +208,13 @@ for i=1:8
                               'Units','normalized',...
                               'Position',[0.005 PosY-0.01 0.2 0.08]);
                           
-    AinStreamer.handles.Threshold_edt(i) = uicontrol(Threshold_bg,'Style',...
+    obj.GUIhandles.Threshold_edt(i) = uicontrol(Threshold_bg,'Style',...
                               'edit',...
                               'String',0,...
                               'Units','normalized',...
                               'Position',[0.25 PosY 0.3 0.08]);
                           
-    AinStreamer.handles.ResetValues_edt(i) = uicontrol(Threshold_bg,'Style',...
+    obj.GUIhandles.ResetValues_edt(i) = uicontrol(Threshold_bg,'Style',...
                               'edit',...
                               'String',0,...
                               'Units','normalized',...
@@ -213,199 +229,191 @@ SetThresholds_bn(i) = uicontrol(Threshold_bg,'Style',...
                               'Position',[0.25 0.01 0.6 0.1],...
                               'Callback', {@(hpb,eventdata)SetThresholds_Callback(hpb,eventdata,guidata(hpb),obj)});
                           
-% % Set 0-10V default Voltage range
-% ProgramAnalogModuleParam('VoltageRange', 1:8, 4*ones(8,1));
-
+%Set 0-10V default Voltage range
+flush(obj.Port)
+obj.VoltageRange = {(1:8)', '-10V:10V'};
+obj.SamplingRate = obj.GUIhandles.SamplingRate;
+obj.ActiveChannels = 1:8;
 end
 
 function Start_btn_Callback(hObject, eventdata, handles, obj)
-    
-    global AinStreamer;
 
-    switch AinStreamer.CurrentWindow
+    switch obj.GUIhandles.CurrentWindow
         case 'Log'
 
-            AinStreamer.Running = 0;
-            if AinStreamer.Logging==0
+            obj.GUIhandles.Running = 0;
+            if obj.GUIhandles.Logging==0
 
-                AinStreamer.handles.Value_txt.FontSize = 14;
-                AinStreamer.handles.Value_txt.String = 'Logging...';
+                obj.GUIhandles.Value_txt.FontSize = 14;
+                obj.GUIhandles.Value_txt.String = {'','Logging...'};
 
                 flush(obj.Port)
 
                 % Start logging
                 obj.StartLogging;
-
-                AinStreamer.Logging = 1;
+                obj.GUIhandles.Logging = 1;
             end
 
     otherwise % Signal or Event
 
-        if AinStreamer.Running==0
+        if obj.GUIhandles.Running==0
 
             %Reset acquisition time
-            AinStreamer.T = 0;
+            obj.GUIhandles.T = 0;
 
             flush(obj.Port)
                         
             %Set sampling period                        
-            SamplingRate = str2double(AinStreamer.handles.SamplingRate_edt.String);            
-            AinStreamer.SamplingRate = SamplingRate; %Arduino Timer period in ms                        
-            obj.SamplingRate = SamplingRate;
+            SamplingRate = str2double(obj.GUIhandles.SamplingRate_edt.String);            
+            obj.GUIhandles.SamplingRate = SamplingRate; %Arduino Timer period in ms                        
+            %obj.SamplingRate = SamplingRate;
 
             %Acquisition timer
-            AinStreamer.timer = timer('Name','MyTimer',               ...
-                               'Period',AinStreamer.TimerPeriod,                    ... 
+            obj.GUIhandles.timer = timer('Name','MyTimer',               ...
+                               'Period',obj.GUIhandles.TimerPeriod,                    ... 
                                'StartDelay',0,                 ... 
                                'TasksToExecute',inf,           ... 
                                'ExecutionMode','fixedSpacing', ...
-                               'TimerFcn',{@timerCallback,AinStreamer.CurrentWindow,obj});                           
+                               'TimerFcn',{@timerCallback,obj.GUIhandles.CurrentWindow,obj});                           
                            
             %Reset Plot
-            set(AinStreamer.Signal.Plot,'XData',[],'YData',[]);
+            set(obj.GUIhandles.Signal.Plot,'XData',[],'YData',[]);
 
             % Send 'Select channel' command to the AM
-            Channel_bg_Callback(AinStreamer.handles.Channel_bg,[],[], obj);
+%             Channel_bg_Callback(obj.GUIhandles.handles.Channel_bg,[],[], obj);
 
             % Send 'Select range' command to the AM
-            Range_bg_Callback(AinStreamer.handles.Range_bg, [], [], obj);
+%             Range_bg_Callback(obj.GUIhandles.handles.Range_bg, [], [], obj);
 
             % Send 'Start' command to the AM
-            switch AinStreamer.CurrentWindow
+            switch obj.GUIhandles.CurrentWindow
                 case 'Signal'
-
-                    %AinStreamer.SerialPort.write(uint8([213 61]), 'uint8');
-                    disp('Here StartStreamingSignal method?')
-                    obj.Port.write(uint8([213 61]), 'uint8');
+                    obj.StartStreaming('Signal');
                 case 'Events'
-                    %AinStreamer.SerialPort.write(uint8([213 65]), 'uint8');
-                    disp('Here StartStreamingEvents method?')
-                    obj.Port.write(uint8([213 65]), 'uint8');
+                    obj.StartStreaming('Events');
             end
 
-            AinStreamer.Running=1;
-
-            flush(obj.Port)
-
-            start(AinStreamer.timer);
-
+            obj.GUIhandles.Running=1;
+            %flush(obj.Port)
+            start(obj.GUIhandles.timer);
         end
     end
 end
 
 function Stop_btn_Callback(hObject, eventdata, handles, obj)
 
-global AinStreamer;
-
-switch AinStreamer.CurrentWindow
+switch obj.GUIhandles.CurrentWindow
     case 'Log'
         
-        if AinStreamer.Logging==1
+        if obj.GUIhandles.Logging==1
             
             flush(obj.Port)
             
             % Send 'Retrieve' command to the AM
-            AinStreamer.Logging = 0;
-            AinStreamer.handles.Value_txt.FontSize = 14;
-            AinStreamer.handles.Value_txt.String = 'Retrieving';
+            obj.GUIhandles.Logging = 0;
+            obj.GUIhandles.Value_txt.FontSize = 14;
+            obj.GUIhandles.Value_txt.String = {'','Retrieving...'};
             
             data = obj.RetrieveData;
             xdata = data.x;
             ydata = data.y;
             
-            AinStreamer.handles.Value_txt.FontSize = 14;
-            AinStreamer.handles.Value_txt.String = 'Retrieved';
+            obj.GUIhandles.Value_txt.FontSize = 14;
+            obj.GUIhandles.Value_txt.String = {'','Done!'};
             
             %clean plots
             for i=1:8
-                set(AinStreamer.Log.Plot(i),'XData',[],'YData',[]);
+                set(obj.GUIhandles.Log.Plot(i),'XData',[],'YData',[]);
             end
             
             for i=1:8
-                set(AinStreamer.Log.Plot(i),'XData',xdata,'YData',ydata(i,:));
+                set(obj.GUIhandles.Log.Plot(i),'XData',xdata,'YData',ydata(i,:));
             end
             
-            switch AinStreamer.SelectedRange
+            switch obj.GUIhandles.SelectedRange
                 case 1
-                    AinStreamer.Log.Axis.YLim = [0 10];
+                    obj.GUIhandles.Log.Axis.YLim = [-10 10];
                 case 2
-                    AinStreamer.Log.Axis.YLim = [-2.5 2.5];
+                    obj.GUIhandles.Log.Axis.YLim = [-5 5];
                 case 3
-                    AinStreamer.Log.Axis.YLim = [-5 5];
+                    obj.GUIhandles.Log.Axis.YLim = [-2.5 2.5];
                 case 4
-                    AinStreamer.Log.Axis.YLim = [-10 10];
+                    obj.GUIhandles.Log.Axis.YLim = [0 10];
             end
             
-            AinStreamer.Log.Axis.XLim = [xdata(1) xdata(end)];
+            obj.GUIhandles.Log.Axis.XLim = [xdata(1) xdata(end)];
             
         end
         
     otherwise % Signal or Event
-        stop(AinStreamer.timer);
         
-        disp('Here add stop streaming methods');
+        stop(obj.GUIhandles.timer);
+
         % Send 'Stop signal' and 'Stop Events' commands
-        obj.Port.write(uint8([213 62]), 'uint8');
-        obj.Port.write(uint8([213 66]), 'uint8');
+        obj.StopStreaming;
 
         flush(obj.Port)
 
 end
-AinStreamer.Running=0;
+obj.GUIhandles.Running=0;
 end
 
 function Win_edt_Callback(hObject, eventdata, handles, obj)
-    global AinStreamer
-    AinStreamer.TimeWindow = str2double(get(hObject,'String'));
+
+    obj.GUIhandles.TimeWindow = str2double(get(hObject,'String'));
+    obj.GUIhandles.xpos = 0;
+    obj.GUIhandles.xN = round(obj.GUIhandles.TimeWindow*obj.GUIhandles.SamplingRate);
+    obj.GUIhandles.ydata = nan(1,obj.GUIhandles.xN);
+
 end
 
 function SamplingRate_edt_Callback(hObject, eventdata, handles, obj)
 
-global AinStreamer
+    if obj.GUIhandles.Running
 
-    if AinStreamer.Running
-
-        disp('Replace here with stop streaming methods.')
-        stop(AinStreamer.timer);
+        stop(obj.GUIhandles.timer);
 
         % Send Stop
-        obj.Port.write(uint8([213 62]), 'uint8');
-        obj.Port.write(uint8([213 66]), 'uint8');
-        obj.Port.write(uint8([213 69]), 'uint8');
+        obj.StopStreaming;
+        
+        %obj.Port.write(uint8([213 69]), 'uint8');
     end
 
     % Set sampling period
-    SamplingRate = str2double(AinStreamer.handles.SamplingRate_edt.String);
-    AinStreamer.SamplingRate = SamplingRate;
+    SamplingRate = str2double(obj.GUIhandles.SamplingRate_edt.String);
+    obj.GUIhandles.SamplingRate = SamplingRate;
     
     flush(obj.Port)
 
     obj.SamplingRate = SamplingRate;
+    
+    % plotting properties
+    obj.GUIhandles.xpos = 0;
+    obj.GUIhandles.xN = round(obj.GUIhandles.TimeWindow*obj.GUIhandles.SamplingRate);
+    obj.GUIhandles.ydata = nan(1,obj.GUIhandles.xN);
 
-    if AinStreamer.Running
+    if obj.GUIhandles.Running
+        
         % Send 'Start' command to the AM
-        disp('Replace here with start streaming method')
-        switch AinStreamer.CurrentWindow
-            
+        switch obj.GUIhandles.CurrentWindow
             case 'Signal'
-                obj.Port.write(uint8([213 61]), 'uint8');
+                obj.StartStreaming('Signal');
             case 'Events'
-                obj.Port.write(uint8([213 65]), 'uint8');
+                obj.StartStreaming('Events');
         end
-        start(AinStreamer.timer);
+        
+        start(obj.GUIhandles.timer);
     end
 end
 
 function timerCallback(~,~,Tab,obj)
 
-    global AinStreamer;
-         
     ts = tic;
-%     if AnalogModuleStreamer.SerialPort.bytesAvailable>8
-%         AnalogModuleStreamer.handles.Message_txt.String =  'Too fast...';
-%     else
-%         AnalogModuleStreamer.handles.Message_txt.String =  '';
-%     end
+    if obj.Port.bytesAvailable>8
+        obj.GUIhandles.Message_txt.String =  'Too fast...';
+    else
+        obj.GUIhandles.Message_txt.String =  '';
+    end
     
     % Read
     switch Tab
@@ -413,285 +421,294 @@ function timerCallback(~,~,Tab,obj)
         case 'Signal'
             
             if obj.Port.bytesAvailable>=4
-
+                
                 % Increase time only if there is a byte available
-                AinStreamer.T = AinStreamer.T + 1/AinStreamer.SamplingRate;
-
-                a = obj.ScaleValue('toVolts',obj.Port.read(1, 'uint32'),obj.ValidRanges(AinStreamer.SelectedRange));
-
-                xdata = [AinStreamer.Signal.Plot.XData AinStreamer.T];
-                ydata = [AinStreamer.Signal.Plot.YData a];
-
-                set(AinStreamer.Signal.Plot,'XData',xdata,'YData',ydata)
-                AinStreamer.Signal.Axis.XLim = [0 xdata(end)];
-
+                obj.GUIhandles.T = obj.GUIhandles.T + 1/obj.GUIhandles.SamplingRate;
+                
+                a = obj.ScaleValue('toVolts',obj.Port.read(1, 'uint16'),obj.ValidRanges(obj.GUIhandles.SelectedRange));
+                
+                xdata = 1:obj.GUIhandles.xN;
+                
+                obj.GUIhandles.xpos = obj.GUIhandles.xpos + 1;
+                obj.GUIhandles.xpos = mod(obj.GUIhandles.xpos,obj.GUIhandles.xN);
+                if obj.GUIhandles.xpos = mod(obj.GUIhandles.xpos,obj.GUIhandles.xN)
+                
+                obj.GUIhandles.ydata(1,obj.GUIhandles.xpos) = a;
+                
+                set(obj.GUIhandles.Signal.Plot,'XData',xdata,'YData',obj.GUIhandles.ydata)
+                
+                %% old version of plotting
+                %xdata = [obj.GUIhandles.Signal.Plot.XData obj.GUIhandles.T];
+                %ydata = [obj.GUIhandles.Signal.Plot.YData a];                
+                %set(obj.GUIhandles.Signal.Plot,'XData',xdata,'YData',ydata)
+                %obj.GUIhandles.Signal.Axis.XLim = [0 xdata(end)];                
                 % Constant-size window
-                if AinStreamer.T>=AinStreamer.TimeWindow
-
-                    xdata_win = xdata(xdata>AinStreamer.T-AinStreamer.TimeWindow);
-                    ydata_win = ydata(xdata>AinStreamer.T-AinStreamer.TimeWindow);
-                    set(AinStreamer.Signal.Plot,'XData',xdata_win,'YData',ydata_win)
-                    AinStreamer.Signal.Axis.XLim = [AinStreamer.T-AinStreamer.TimeWindow AinStreamer.T];
-                end
-
-                switch AinStreamer.SelectedRange
-                    case 4
-                        AinStreamer.Signal.Axis.YLim = [0 10];
-                    case 3
-                        AinStreamer.Signal.Axis.YLim = [-2.5 2.5];
-                    case 2
-                        AinStreamer.Signal.Axis.YLim = [-5 5];
-                    case 1
-                        AinStreamer.Signal.Axis.YLim = [-10 10];
-                end
-
+                %if obj.GUIhandles.T>=obj.GUIhandles.TimeWindow                    
+                %    xdata_win = xdata(xdata>obj.GUIhandles.T-obj.GUIhandles.TimeWindow);
+                %    ydata_win = ydata(xdata>obj.GUIhandles.T-obj.GUIhandles.TimeWindow);
+                %    set(obj.GUIhandles.Signal.Plot,'XData',xdata_win,'YData',ydata_win)
+                %    obj.GUIhandles.Signal.Axis.XLim = [obj.GUIhandles.T-obj.GUIhandles.TimeWindow obj.GUIhandles.T];
+                %end
+                %%
+                
+%                 switch obj.GUIhandles.SelectedRange
+%                     case 4
+%                         obj.GUIhandles.Signal.Axis.YLim = [0 10];
+%                     case 3
+%                         obj.GUIhandles.Signal.Axis.YLim = [-2.5 2.5];
+%                     case 2
+%                         obj.GUIhandles.Signal.Axis.YLim = [-5 5];
+%                     case 1
+%                         obj.GUIhandles.Signal.Axis.YLim = [-10 10];
+%                 end
+                
                 drawnow
-                AinStreamer.handles.Value_txt.FontSize = 40;
-                AinStreamer.handles.Value_txt.String = num2str(a,'%2.4f');
+                obj.GUIhandles.Value_txt.FontSize = 40;
+                obj.GUIhandles.Value_txt.String = num2str(a,'%2.4f');
             end
             
         case 'Events'
-
+            
             if obj.Port.bytesAvailable>0
-
+                
                 % Increase time only if there is a byte available
-                AinStreamer.T = AinStreamer.T + 1/AinStreamer.SamplingRate;
-
+                obj.GUIhandles.T = obj.GUIhandles.T + 1/obj.GUIhandles.SamplingRate;
+                
                 % Read Threshold Events
                 a = double(obj.Port.read(1, 'uint8'));
-
-                Events = dec2bin(a,8);
-
-                xdata = [AinStreamer.Events.Plot(1).XData AinStreamer.T AinStreamer.T nan];
-
+                
+                Events = dec2bin(a,8)
+                
+                xdata = [obj.GUIhandles.Events.Plot(1).XData obj.GUIhandles.T obj.GUIhandles.T nan];
+                
                 for i=1:8
-
+                    
                     if Events(i)=='1'
-                        ydata = [AinStreamer.Events.Plot(i).YData [(8-i)*2 (8-i)*2+1] nan];
+                        ydata = [obj.GUIhandles.Events.Plot(i).YData [(8-i)*2 (8-i)*2+1] nan];
                     else
-                        ydata = [AinStreamer.Events.Plot(i).YData nan nan nan];
-                    end 
-
-                    set(AinStreamer.Events.Plot(i),'XData',xdata,'YData',ydata);
-                    AinStreamer.Events.Axis.XLim = [0 xdata(end-1)];
-
-                    % Constant-size window
-                    if AinStreamer.T>=AinStreamer.TimeWindow
-                        AinStreamer.Events.Axis.XLim = [AinStreamer.T-AinStreamer.TimeWindow AinStreamer.T];
+                        ydata = [obj.GUIhandles.Events.Plot(i).YData nan nan nan];
                     end
-
+                    
+                    set(obj.GUIhandles.Events.Plot(i),'XData',xdata,'YData',ydata);
+                    obj.GUIhandles.Events.Axis.XLim = [0 xdata(end-1)];
+                    
+                    % Constant-size window
+                    if obj.GUIhandles.T>=obj.GUIhandles.TimeWindow
+                        obj.GUIhandles.Events.Axis.XLim = [obj.GUIhandles.T-obj.GUIhandles.TimeWindow obj.GUIhandles.T];
+                    end
+                    
                 end
                 drawnow
             end
-        end
+    end
 end
 
 function Channel_bg_Callback(hObject, eventdata, handles, obj)
-
-global AinStreamer
 
     %Change channel
     % Select ADC channel
     switch hObject.SelectedObject.String
         case 'Channel 0'
-            AinStreamer.SelectedChannel = 0;
+            obj.GUIhandles.SelectedChannel = 0;
         case 'Channel 1'
-            AinStreamer.SelectedChannel = 1;
+            obj.GUIhandles.SelectedChannel = 1;
         case 'Channel 2'
-            AinStreamer.SelectedChannel = 2;
+            obj.GUIhandles.SelectedChannel = 2;
         case 'Channel 3'
-            AinStreamer.SelectedChannel = 3;
+            obj.GUIhandles.SelectedChannel = 3;
         case 'Channel 4'
-            AinStreamer.SelectedChannel = 4;
+            obj.GUIhandles.SelectedChannel = 4;
         case 'Channel 5'
-            AinStreamer.SelectedChannel = 5;
+            obj.GUIhandles.SelectedChannel = 5;
         case 'Channel 6'
-            AinStreamer.SelectedChannel = 6;
+            obj.GUIhandles.SelectedChannel = 6;
         case 'Channel 7'
-            AinStreamer.SelectedChannel = 7;
+            obj.GUIhandles.SelectedChannel = 7;
         otherwise
     end
 
     % stop timer
-    if isfield(AinStreamer,'timer')
-        stop(AinStreamer.timer);
+    if isfield(obj.GUIhandles,'timer')
+        stop(obj.GUIhandles.timer);
     end
 
     %Stop streaming
-    disp('Start/Stop streaming methods')
-    switch AinStreamer.CurrentWindow
+    switch obj.GUIhandles.CurrentWindow
         case 'Signal'
-            obj.Port.write(uint8([213 62]), 'uint8');
+            obj.StopStreaming('Signal');
         case 'Events'
-            obj.Port.write(uint8([213 66]), 'uint8');
+            obj.StopStreaming('Events');
     end
 
     % Send 'Select channel' command to the AM
-    disp('Select streaming channel method')
-    obj.Port.write(uint8([213 63 AinStreamer.SelectedChannel]), 'uint8');
-
+    obj.StreamChannel = obj.GUIhandles.SelectedChannel;
+    
     % if it was running, start again
-    if AinStreamer.Running
-        disp('Start/Stop streaming methods')
-        switch AinStreamer.CurrentWindow
+    if obj.GUIhandles.Running
+
+        flush(obj.Port)
+        start(obj.GUIhandles.timer);
+        switch obj.GUIhandles.CurrentWindow
             case 'Signal'
-                obj.Port.write(uint8([213 61]), 'uint8');
+                obj.StartStreaming('Signal');
             case 'Events'
-                obj.Port.write(uint8([213 65]), 'uint8');
+                obj.StartStreaming('Events');
         end
 
-        start(AinStreamer.timer);
+        
     end
 
     %Reset Plot
-    set(AinStreamer.Signal.Plot,'XData',[],'YData',[]);
-
-    % --- Executes when selected object is changed in range_btngroup.
+    set(obj.GUIhandles.Signal.Plot,'XData',[],'YData',[]);
 end
     
 function Range_bg_Callback(hObject, eventdata, handles, obj)
 
-    % Select ADC Range
-    global AinStreamer
-
-    switch hObject.SelectedObject.String
-        case '0V - 10V'
-            AinStreamer.SelectedRange = 4;
-        case '-2.5V - 2.5V'
-            AinStreamer.SelectedRange = 3;
-        case '-5V - 5V'
-            AinStreamer.SelectedRange = 2;
-        case '-10V - 10V'
-            AinStreamer.SelectedRange = 1;
-        otherwise            
-    end
+    obj.GUIhandles.SelectedRange = find(strcmp(hObject.SelectedObject.String,obj.ValidRanges));
 
     % stop timer
-    if isfield(AinStreamer,'timer')
-        stop(AinStreamer.timer);
+    if isfield(obj.GUIhandles,'timer')
+        stop(obj.GUIhandles.timer);
     end
 
     %Stop streaming
-    disp('start/stop method')
-    switch AinStreamer.CurrentWindow
+    switch obj.GUIhandles.CurrentWindow
         case 'Signal'
-            obj.Port.write(uint8([213 62]), 'uint8');
+            obj.StopStreaming('Signal');
         case 'Events'
-            obj.Port.write(uint8([213 66]), 'uint8');
+            obj.StopStreaming('Events');
     end
 
     flush(obj.Port)
 
     % Set Voltage range
-    disp('add faster way')
-    obj.VoltageRange = {1, obj.ValidRanges{1,AinStreamer.SelectedRange};...
-                      2, obj.ValidRanges{1,AinStreamer.SelectedRange};...
-                      3, obj.ValidRanges{1,AinStreamer.SelectedRange};...
-                      4, obj.ValidRanges{1,AinStreamer.SelectedRange};...
-                      5, obj.ValidRanges{1,AinStreamer.SelectedRange};...
-                      6, obj.ValidRanges{1,AinStreamer.SelectedRange};...
-                      7, obj.ValidRanges{1,AinStreamer.SelectedRange};...
-                      8, obj.ValidRanges{1,AinStreamer.SelectedRange}};
-
+    obj.VoltageRange = {(1:8)', obj.ValidRanges{1,obj.GUIhandles.SelectedRange}};
+    
     % if it was running, start again
-    if AinStreamer.Running
-        disp('start/stop method')
-        switch AinStreamer.CurrentWindow
+    if obj.GUIhandles.Running
+        
+        switch obj.GUIhandles.CurrentWindow
             case 'Signal'
-                obj.Port.write(uint8([213 61]), 'uint8');
+                obj.StartStreaming('Signal');
             case 'Events'
-                obj.Port.write(uint8([213 65]), 'uint8');
+                obj.StartStreaming('Events');
         end
 
-        start(AinStreamer.timer);
+        start(obj.GUIhandles.timer);
     end
 
     %Reset Plot
-    set(AinStreamer.Signal.Plot,'XData',[],'YData',[]);
+    set(obj.GUIhandles.Signal.Plot,'XData',[],'YData',[]);
 end
 
 function TabChange_Callback(hObject, eventdata, handles, obj)
     
-global AinStreamer
-AinStreamer.CurrentWindow = hObject.SelectedTab.Title;
+obj.GUIhandles.CurrentWindow = hObject.SelectedTab.Title;
 
-    if AinStreamer.Running
+    if obj.GUIhandles.Running
 
-        switch AinStreamer.CurrentWindow
+        switch obj.GUIhandles.CurrentWindow
         
             case 'Signal'
             
-            stop(AinStreamer.timer);
-             
-            flush(obj.Port)
-            
-            %Stop sending events
-            disp('start/stop')
-            obj.Port.write(uint8([213 66]), 'uint8');
-            
-            %Reset Plot
-            set(AinStreamer.Signal.Plot,'XData',[],'YData',[]);
-            %Acquisition timer
-            AinStreamer.timer = timer('Name','MyTimer',               ...
-                'Period',AinStreamer.TimerPeriod,                    ...
-                'StartDelay',0,                 ...
-                'TasksToExecute',inf,           ...
-                'ExecutionMode','fixedSpacing', ...
-                'TimerFcn',{@timerCallback,'Signal'});
-            
-            % Start sending signal
-            disp('start/stop')
-            obj.Port.write(uint8([213 61]), 'uint8');
-           
-            start(AinStreamer.timer);
-            AinStreamer.Running=1;
-            
-        case 'Events'
-            
-            % Stop reading
-            stop(AinStreamer.timer);
-            
-            flush(obj.Port)
+                stop(obj.GUIhandles.timer);
 
-            %Stop sending signal
-            disp('stop')
-            obj.Port.write(uint8([213 62]), 'uint8');
-            
-            SetThresholds_Callback([],[])
-            
-            %Reset Plot
-            set(AinStreamer.Events.Plot,'XData',[],'YData',[]);
-                AinStreamer.timer = timer('Name','MyTimer',               ...
-                'Period',AinStreamer.TimerPeriod,                    ...
-                'StartDelay',0,                 ...
-                'TasksToExecute',inf,           ...
-                'ExecutionMode','fixedSpacing', ...
-                'TimerFcn',{@timerCallback,'Events'});
+                %flush(obj.Port)
 
+                %Stop sending events
+                obj.StopStreaming('Events');
+
+                %Reset Plot
+                set(obj.GUIhandles.Signal.Plot,'XData',[],'YData',[]);
+                
+                
+                %Acquisition timer
+                obj.GUIhandles.timer = timer('Name','MyTimer',               ...
+                                   'Period',obj.GUIhandles.TimerPeriod,                    ... 
+                                   'StartDelay',0,                 ... 
+                                   'TasksToExecute',inf,           ... 
+                                   'ExecutionMode','fixedSpacing', ...
+                                   'TimerFcn',{@timerCallback,obj.GUIhandles.CurrentWindow,obj}); 
+                           
+                % Start sending signal
+                obj.StartStreaming('Signal');
+
+                flush(obj.Port)
+                start(obj.GUIhandles.timer);
+                obj.GUIhandles.Running=1;
             
-            %Start sending events
-            disp('stop')
-            obj.Port.write(uint8([213 65]), 'uint8');
-            
-            start(AinStreamer.timer);
-            AinStreamer.Running=1;
+            case 'Events'
+
+                % Stop reading
+                stop(obj.GUIhandles.timer);
+
+                %flush(obj.Port);
+
+                %Stop sending signal
+                obj.StopStreaming('Signal');
+
+                %SetThresholds_Callback([],[],[], obj);
+
+                %Reset Plot
+                set(obj.GUIhandles.Events.Plot,'XData',[],'YData',[]);
+                
+                %Acquisition timer
+                obj.GUIhandles.timer = timer('Name','MyTimer',               ...
+                                   'Period',obj.GUIhandles.TimerPeriod,                    ... 
+                                   'StartDelay',0,                 ... 
+                                   'TasksToExecute',inf,           ... 
+                                   'ExecutionMode','fixedSpacing', ...
+                                   'TimerFcn',{@timerCallback,obj.GUIhandles.CurrentWindow,obj});
+
+                %Start sending events
+                obj.StartStreaming('Events');
+
+                flush(obj.Port);
+                start(obj.GUIhandles.timer);
+                obj.GUIhandles.Running=1;
         end
     end
 end
 
 function SetThresholds_Callback(~,~,~,obj)
-
+    
     for i=1:8
-        Ain.CurrentThresholds(i) = str2num(AnalogModuleStreamer.handles.Threshold_edt(i).String);
-        AnalogModuleStreamer.CurrentResetValues(i) = str2num(AnalogModuleStreamer.handles.ResetValues_edt(i).String);
+        obj.GUIhandles.CurrentThresholds(i) = str2num(obj.GUIhandles.Threshold_edt(i).String);
+        obj.GUIhandles.CurrentResetValues(i) = str2num(obj.GUIhandles.ResetValues_edt(i).String);
     end
 
-%Send Thresholds
-ProgramAnalogModuleParam('Thresholds',1:8,AnalogModuleStreamer.CurrentThresholds'); %Thresholds in Volts
-ProgramAnalogModuleParam('ResetValues',1:8,AnalogModuleStreamer.CurrentResetValues'); %Thresholds in Volts
+    % stop timer
+    if isfield(obj.GUIhandles,'timer')
+        stop(obj.GUIhandles.timer);
+    end
 
+    %Stop streaming
+    obj.StopStreaming();
+
+    flush(obj.Port)
+    
+    %Send Thresholds
+    obj.Thresholds = [(1:8)' obj.GUIhandles.CurrentThresholds']; %Thresholds in Volts
+
+    obj.ResetValues = [(1:8)', obj.GUIhandles.CurrentResetValues']; %Thresholds in Volts
+    
+    % if it was running, start again
+    if obj.GUIhandles.Running
+        
+        switch obj.GUIhandles.CurrentWindow
+            case 'Signal'
+                obj.StartStreaming('Signal');
+            case 'Events'
+                obj.StartStreaming('Events');
+        end
+
+        start(obj.GUIhandles.timer);
+    end
+    
+    
+end
 
 function CloseReq(hObject, eventdata, handles, obj)
     delete(gcf)
-    clear AinStreamer
+    clear obj.GUIhandles
 end

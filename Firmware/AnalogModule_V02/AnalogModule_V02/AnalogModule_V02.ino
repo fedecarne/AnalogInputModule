@@ -7,7 +7,7 @@
 // IMPORTANT: Requires the SDFat-Beta library from:
 // https://github.com/greiman/SdFat-beta/tree/master/SdFat
 
-#include <ArCOM.h>
+#include "ArCOM.h"
 #include <SPI.h>
 #include <SdFat.h>
 SdFatSdioEX SD;

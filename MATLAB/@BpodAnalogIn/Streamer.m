@@ -5,6 +5,9 @@ obj.GUIhandles.T=0;
 obj.GUIhandles.TimeWindow = 5; % in seconds
 obj.GUIhandles.TimerPeriod = 0.001;% in seconds
 obj.GUIhandles.SamplingRate = 50; % in HZ
+obj.GUIhandles.xpos = 0; % x-axis position for current time
+obj.GUIhandles.xN = round(obj.GUIhandles.TimeWindow*obj.GUIhandles.SamplingRate); % total amount of data point in time window 
+obj.GUIhandles.ydata = nan(1,obj.GUIhandles.xN);
 obj.GUIhandles.SelectedChannel = 0;
 obj.GUIhandles.SelectedRange = 1;
 obj.GUIhandles.Running = 0;
@@ -182,7 +185,7 @@ obj.GUIhandles.Message_txt = uicontrol('Style', 'text',...
                     'FontSize',10);
                  
 obj.GUIhandles.Value_txt = uicontrol('Style', 'text',...
-                     'String', '-.-',...
+                     'String', {[];'-.-';[]},...
                      'Units','normalized',...
                      'Position', [0.72 0.76 0.27 0.19],...
                      'ForegroundColor',[1 1 0],...    
@@ -358,6 +361,9 @@ end
 function Win_edt_Callback(hObject, eventdata, handles, obj)
 
     obj.GUIhandles.TimeWindow = str2double(get(hObject,'String'));
+    obj.GUIhandles.xpos = 0;
+    obj.GUIhandles.xN = round(obj.GUIhandles.TimeWindow*obj.GUIhandles.SamplingRate);
+    obj.GUIhandles.ydata = nan(1,obj.GUIhandles.xN);
 
 end
 
@@ -380,6 +386,11 @@ function SamplingRate_edt_Callback(hObject, eventdata, handles, obj)
     flush(obj.Port)
 
     obj.SamplingRate = SamplingRate;
+    
+    % plotting properties
+    obj.GUIhandles.xpos = 0;
+    obj.GUIhandles.xN = round(obj.GUIhandles.TimeWindow*obj.GUIhandles.SamplingRate);
+    obj.GUIhandles.ydata = nan(1,obj.GUIhandles.xN);
 
     if obj.GUIhandles.Running
         
@@ -414,25 +425,31 @@ function timerCallback(~,~,Tab,obj)
                 % Increase time only if there is a byte available
                 obj.GUIhandles.T = obj.GUIhandles.T + 1/obj.GUIhandles.SamplingRate;
                 
-                obj.Port.bytesAvailable
-                %dec2bin(obj.Port.read(1, 'uint16'))
-                
                 a = obj.ScaleValue('toVolts',obj.Port.read(1, 'uint16'),obj.ValidRanges(obj.GUIhandles.SelectedRange));
                 
-                xdata = [obj.GUIhandles.Signal.Plot.XData obj.GUIhandles.T];
-                ydata = [obj.GUIhandles.Signal.Plot.YData a];
+                xdata = 1:obj.GUIhandles.xN;
                 
-                set(obj.GUIhandles.Signal.Plot,'XData',xdata,'YData',ydata)
-                obj.GUIhandles.Signal.Axis.XLim = [0 xdata(end)];
+                obj.GUIhandles.xpos = obj.GUIhandles.xpos + 1;
+                obj.GUIhandles.xpos = mod(obj.GUIhandles.xpos,obj.GUIhandles.xN);
+                if obj.GUIhandles.xpos == 0, obj.GUIhandles.xpos = obj.GUIhandles.xN; end;
                 
+                obj.GUIhandles.ydata(1,obj.GUIhandles.xpos) = a;
+                
+                set(obj.GUIhandles.Signal.Plot,'XData',xdata,'YData',obj.GUIhandles.ydata)
+                
+                %% old version of plotting
+                %xdata = [obj.GUIhandles.Signal.Plot.XData obj.GUIhandles.T];
+                %ydata = [obj.GUIhandles.Signal.Plot.YData a];                
+                %set(obj.GUIhandles.Signal.Plot,'XData',xdata,'YData',ydata)
+                %obj.GUIhandles.Signal.Axis.XLim = [0 xdata(end)];                
                 % Constant-size window
-                if obj.GUIhandles.T>=obj.GUIhandles.TimeWindow
-                    
-                    xdata_win = xdata(xdata>obj.GUIhandles.T-obj.GUIhandles.TimeWindow);
-                    ydata_win = ydata(xdata>obj.GUIhandles.T-obj.GUIhandles.TimeWindow);
-                    set(obj.GUIhandles.Signal.Plot,'XData',xdata_win,'YData',ydata_win)
-                    obj.GUIhandles.Signal.Axis.XLim = [obj.GUIhandles.T-obj.GUIhandles.TimeWindow obj.GUIhandles.T];
-                end
+                %if obj.GUIhandles.T>=obj.GUIhandles.TimeWindow                    
+                %    xdata_win = xdata(xdata>obj.GUIhandles.T-obj.GUIhandles.TimeWindow);
+                %    ydata_win = ydata(xdata>obj.GUIhandles.T-obj.GUIhandles.TimeWindow);
+                %    set(obj.GUIhandles.Signal.Plot,'XData',xdata_win,'YData',ydata_win)
+                %    obj.GUIhandles.Signal.Axis.XLim = [obj.GUIhandles.T-obj.GUIhandles.TimeWindow obj.GUIhandles.T];
+                %end
+                %%
                 
                 switch obj.GUIhandles.SelectedRange
                     case 4
