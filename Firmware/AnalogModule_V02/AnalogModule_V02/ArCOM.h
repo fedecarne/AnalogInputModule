@@ -33,6 +33,7 @@ public:
   ArCOM(Stream &s);
   // Serial functions
   unsigned int available();
+  void flush();
   // Unsigned integers
 	void writeByte(byte byte2Write);
   void writeUint8(byte byte2Write);
