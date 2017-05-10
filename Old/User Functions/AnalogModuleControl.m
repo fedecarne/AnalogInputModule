@@ -1,4 +1,5 @@
-function S = ControlPanel(obj, Op, varargin)
+
+function S = AnalogModuleControl(Op,varargin)
 
 global BpodSystem
 
@@ -20,7 +21,7 @@ switch Op
                                              'HorizontalAlignment','Right');
                                          
         AMControl.SamplingRate.Edit = uicontrol('Style', 'edit', ...
-                                                  'String',10,...
+                                                  'String',100,...
                                              'Position', [170 22 30 20],...
                                              'FontWeight', 'normal',...
                                              'FontName', 'Arial',...
@@ -86,4 +87,3 @@ switch Op
         S.SamplingRate = str2double(AMControl.SamplingRate.Edit.String);
         
 end
-

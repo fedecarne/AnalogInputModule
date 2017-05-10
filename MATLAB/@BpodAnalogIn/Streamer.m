@@ -125,7 +125,7 @@ for i=1:8
     Channel_bn(i) = uicontrol(obj.GUIhandles.Channel_bg,'Style',...
                               'radiobutton',...
                               'BackgroundColor',0.95*[1 1 1],...
-                              'String',['Channel ' num2str(i-1)],...
+                              'String',['Channel ' num2str(i)],...
                               'Units','normalized',...
                               'Position',[0.07 PosY 0.9 0.12]);
 end
@@ -203,7 +203,7 @@ for i=1:8
     Threshold_txt(i) = uicontrol(Threshold_bg,'Style',...
                               'text',...
                               'BackgroundColor',0.95*[1 1 1],...
-                              'String',['Ch' num2str(i-1)],...
+                              'String',['Ch' num2str(i)],...
                               'FontSize',7,...
                               'Units','normalized',...
                               'Position',[0.005 PosY-0.01 0.2 0.08]);
@@ -234,6 +234,7 @@ flush(obj.Port)
 obj.VoltageRange = {(1:8)', '-10V:10V'};
 obj.SamplingRate = obj.GUIhandles.SamplingRate;
 obj.ActiveChannels = 1:8;
+obj.StreamChannel = 1;
 end
 
 function Start_btn_Callback(hObject, eventdata, handles, obj)
@@ -265,7 +266,8 @@ function Start_btn_Callback(hObject, eventdata, handles, obj)
                         
             %Set sampling period                        
             SamplingRate = str2double(obj.GUIhandles.SamplingRate_edt.String);            
-            obj.GUIhandles.SamplingRate = SamplingRate; %Arduino Timer period in ms                        
+            obj.GUIhandles.SamplingRate = SamplingRate;
+            
             %obj.SamplingRate = SamplingRate;
 
             %Acquisition timer
@@ -279,22 +281,15 @@ function Start_btn_Callback(hObject, eventdata, handles, obj)
             %Reset Plot
             set(obj.GUIhandles.Signal.Plot,'XData',[],'YData',[]);
 
-            % Send 'Select channel' command to the AM
-%             Channel_bg_Callback(obj.GUIhandles.handles.Channel_bg,[],[], obj);
-
-            % Send 'Select range' command to the AM
-%             Range_bg_Callback(obj.GUIhandles.handles.Range_bg, [], [], obj);
-
             % Send 'Start' command to the AM
             switch obj.GUIhandles.CurrentWindow
                 case 'Signal'
-                    obj.StartStreaming('Signal');
+                    obj.StartUSBstreaming('Signal');
                 case 'Events'
-                    obj.StartStreaming('Events');
+                    obj.StartUSBstreaming('Events');
             end
 
             obj.GUIhandles.Running=1;
-            %flush(obj.Port)
             start(obj.GUIhandles.timer);
         end
     end
@@ -350,7 +345,7 @@ switch obj.GUIhandles.CurrentWindow
         stop(obj.GUIhandles.timer);
 
         % Send 'Stop signal' and 'Stop Events' commands
-        obj.StopStreaming;
+        obj.StopUSBstreaming;
 
         flush(obj.Port)
 
@@ -374,9 +369,7 @@ function SamplingRate_edt_Callback(hObject, eventdata, handles, obj)
         stop(obj.GUIhandles.timer);
 
         % Send Stop
-        obj.StopStreaming;
-        
-        %obj.Port.write(uint8([213 69]), 'uint8');
+        obj.StopUSBstreaming;
     end
 
     % Set sampling period
@@ -397,9 +390,9 @@ function SamplingRate_edt_Callback(hObject, eventdata, handles, obj)
         % Send 'Start' command to the AM
         switch obj.GUIhandles.CurrentWindow
             case 'Signal'
-                obj.StartStreaming('Signal');
+                obj.StartUSBstreaming('Signal');
             case 'Events'
-                obj.StartStreaming('Events');
+                obj.StartUSBstreaming('Events');
         end
         
         start(obj.GUIhandles.timer);
@@ -411,6 +404,7 @@ function timerCallback(~,~,Tab,obj)
     ts = tic;
     if obj.Port.bytesAvailable>8
         obj.GUIhandles.Message_txt.String =  'Too fast...';
+        disp(obj.Port.bytesAvailable)
     else
         obj.GUIhandles.Message_txt.String =  '';
     end
@@ -425,31 +419,18 @@ function timerCallback(~,~,Tab,obj)
                 % Increase time only if there is a byte available
                 obj.GUIhandles.T = obj.GUIhandles.T + 1/obj.GUIhandles.SamplingRate;
                 
+                % Read new byte
+                obj.Port.read(1, 'uint16')
                 a = obj.ScaleValue('toVolts',obj.Port.read(1, 'uint16'),obj.ValidRanges(obj.GUIhandles.SelectedRange));
                 
+                % Sweep like osciloscope
                 xdata = 1:obj.GUIhandles.xN;
-                
-                obj.GUIhandles.xpos = obj.GUIhandles.xpos + 1;
-                obj.GUIhandles.xpos = mod(obj.GUIhandles.xpos,obj.GUIhandles.xN);
-                if obj.GUIhandles.xpos == 0, obj.GUIhandles.xpos = obj.GUIhandles.xN; end;
-                
+                obj.GUIhandles.xpos = mod(obj.GUIhandles.xpos,obj.GUIhandles.xN)+1;
                 obj.GUIhandles.ydata(1,obj.GUIhandles.xpos) = a;
+                obj.GUIhandles.ydata(1,mod(obj.GUIhandles.xpos+(0:round(obj.GUIhandles.xN*0.1)),obj.GUIhandles.xN)+1) = nan;
                 
                 set(obj.GUIhandles.Signal.Plot,'XData',xdata,'YData',obj.GUIhandles.ydata)
-                
-                %% old version of plotting
-                %xdata = [obj.GUIhandles.Signal.Plot.XData obj.GUIhandles.T];
-                %ydata = [obj.GUIhandles.Signal.Plot.YData a];                
-                %set(obj.GUIhandles.Signal.Plot,'XData',xdata,'YData',ydata)
-                %obj.GUIhandles.Signal.Axis.XLim = [0 xdata(end)];                
-                % Constant-size window
-                %if obj.GUIhandles.T>=obj.GUIhandles.TimeWindow                    
-                %    xdata_win = xdata(xdata>obj.GUIhandles.T-obj.GUIhandles.TimeWindow);
-                %    ydata_win = ydata(xdata>obj.GUIhandles.T-obj.GUIhandles.TimeWindow);
-                %    set(obj.GUIhandles.Signal.Plot,'XData',xdata_win,'YData',ydata_win)
-                %    obj.GUIhandles.Signal.Axis.XLim = [obj.GUIhandles.T-obj.GUIhandles.TimeWindow obj.GUIhandles.T];
-                %end
-                %%
+                obj.GUIhandles.Signal.Axis.XLim = [0 obj.GUIhandles.xN];
                 
                 switch obj.GUIhandles.SelectedRange
                     case 4
@@ -477,7 +458,7 @@ function timerCallback(~,~,Tab,obj)
                 % Read Threshold Events
                 a = double(obj.Port.read(1, 'uint8'));
                 
-                Events = dec2bin(a,8)
+                Events = dec2bin(a,8);
                 
                 xdata = [obj.GUIhandles.Events.Plot(1).XData obj.GUIhandles.T obj.GUIhandles.T nan];
                 
@@ -508,8 +489,6 @@ function Channel_bg_Callback(hObject, eventdata, handles, obj)
     %Change channel
     % Select ADC channel
     switch hObject.SelectedObject.String
-        case 'Channel 0'
-            obj.GUIhandles.SelectedChannel = 0;
         case 'Channel 1'
             obj.GUIhandles.SelectedChannel = 1;
         case 'Channel 2'
@@ -524,6 +503,8 @@ function Channel_bg_Callback(hObject, eventdata, handles, obj)
             obj.GUIhandles.SelectedChannel = 6;
         case 'Channel 7'
             obj.GUIhandles.SelectedChannel = 7;
+        case 'Channel 8'
+            obj.GUIhandles.SelectedChannel = 8;
         otherwise
     end
 
@@ -535,9 +516,9 @@ function Channel_bg_Callback(hObject, eventdata, handles, obj)
     %Stop streaming
     switch obj.GUIhandles.CurrentWindow
         case 'Signal'
-            obj.StopStreaming('Signal');
+            obj.StopUSBstreaming('Signal');
         case 'Events'
-            obj.StopStreaming('Events');
+            obj.StopUSBstreaming('Events');
     end
 
     % Send 'Select channel' command to the AM
@@ -550,9 +531,9 @@ function Channel_bg_Callback(hObject, eventdata, handles, obj)
         start(obj.GUIhandles.timer);
         switch obj.GUIhandles.CurrentWindow
             case 'Signal'
-                obj.StartStreaming('Signal');
+                obj.StartUSBstreaming('Signal');
             case 'Events'
-                obj.StartStreaming('Events');
+                obj.StartUSBstreaming('Events');
         end
 
         
@@ -574,9 +555,9 @@ function Range_bg_Callback(hObject, eventdata, handles, obj)
     %Stop streaming
     switch obj.GUIhandles.CurrentWindow
         case 'Signal'
-            obj.StopStreaming('Signal');
+            obj.StopUSBstreaming('Signal');
         case 'Events'
-            obj.StopStreaming('Events');
+            obj.StopUSBstreaming('Events');
     end
 
     flush(obj.Port)
@@ -589,9 +570,9 @@ function Range_bg_Callback(hObject, eventdata, handles, obj)
         
         switch obj.GUIhandles.CurrentWindow
             case 'Signal'
-                obj.StartStreaming('Signal');
+                obj.StartUSBstreaming('Signal');
             case 'Events'
-                obj.StartStreaming('Events');
+                obj.StartUSBstreaming('Events');
         end
 
         start(obj.GUIhandles.timer);
@@ -616,7 +597,7 @@ obj.GUIhandles.CurrentWindow = hObject.SelectedTab.Title;
                 %flush(obj.Port)
 
                 %Stop sending events
-                obj.StopStreaming('Events');
+                obj.StopUSBstreaming('Events');
 
                 %Reset Plot
                 set(obj.GUIhandles.Signal.Plot,'XData',[],'YData',[]);
@@ -631,7 +612,7 @@ obj.GUIhandles.CurrentWindow = hObject.SelectedTab.Title;
                                    'TimerFcn',{@timerCallback,obj.GUIhandles.CurrentWindow,obj}); 
                            
                 % Start sending signal
-                obj.StartStreaming('Signal');
+                obj.StartUSBstreaming('Signal');
 
                 flush(obj.Port)
                 start(obj.GUIhandles.timer);
@@ -645,7 +626,7 @@ obj.GUIhandles.CurrentWindow = hObject.SelectedTab.Title;
                 %flush(obj.Port);
 
                 %Stop sending signal
-                obj.StopStreaming('Signal');
+                obj.StopUSBstreaming('Signal');
 
                 %SetThresholds_Callback([],[],[], obj);
 
@@ -661,7 +642,7 @@ obj.GUIhandles.CurrentWindow = hObject.SelectedTab.Title;
                                    'TimerFcn',{@timerCallback,obj.GUIhandles.CurrentWindow,obj});
 
                 %Start sending events
-                obj.StartStreaming('Events');
+                obj.StartUSBstreaming('Events');
 
                 flush(obj.Port);
                 start(obj.GUIhandles.timer);
@@ -683,7 +664,7 @@ function SetThresholds_Callback(~,~,~,obj)
     end
 
     %Stop streaming
-    obj.StopStreaming();
+    obj.StopUSBstreaming();
 
     flush(obj.Port)
     
@@ -697,9 +678,9 @@ function SetThresholds_Callback(~,~,~,obj)
         
         switch obj.GUIhandles.CurrentWindow
             case 'Signal'
-                obj.StartStreaming('Signal');
+                obj.StartUSBstreaming('Signal');
             case 'Events'
-                obj.StartStreaming('Events');
+                obj.StartUSBstreaming('Events');
         end
 
         start(obj.GUIhandles.timer);
@@ -709,6 +690,7 @@ function SetThresholds_Callback(~,~,~,obj)
 end
 
 function CloseReq(hObject, eventdata, handles, obj)
+    flush(obj.Port);
     delete(gcf)
     clear obj.GUIhandles
 end

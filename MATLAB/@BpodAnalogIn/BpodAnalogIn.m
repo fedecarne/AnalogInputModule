@@ -24,6 +24,7 @@ classdef BpodAnalogIn < handle
         ValidRanges = {'-10V:10V', '-5V:5V', '-2.5V:2.5V','0V:10V'};
         ValidSamplingRates = [1 200000]; % Range of valid sampling rates
         nChannels = 8; % Number of input channels
+        HardwareChannelMapping = [1 2 5 6 8 7 4 3]; % channel mapping from chip to board
     end
    
     properties
@@ -45,13 +46,11 @@ classdef BpodAnalogIn < handle
     properties (Access = private)
         CurrentFirmwareVersion = 1;
         opMenuByte = 213; % Byte code to access op menu
-        WaveformsLoaded = zeros(1,256);
 %         maxSimultaneousChannels = 4;
     end
     
     methods
         
-        % Constructor
         function obj = BpodAnalogIn(varargin)
            
             disp('Searching for AnalogIn device. Please wait.')
@@ -67,8 +66,12 @@ classdef BpodAnalogIn < handle
                 end
             end
             
-            obj.Port = ArCOMObject_Ain(portString, 115200);
-            obj.Port.write([obj.opMenuByte 72], 'uint8');
+            try
+                obj.Port = ArCOMObject_Ain(portString, 115200);
+            catch
+                disp('Was not able to find BpodAnalogIn module. Try disconnect and connect again.')
+            end
+            obj.Port.write([obj.opMenuByte 79], 'uint8');
             pause(.1);
             HandShakeOkByte = obj.Port.read(1, 'uint8');
             if HandShakeOkByte == 75
@@ -84,7 +87,7 @@ classdef BpodAnalogIn < handle
         function setDefaultParams(obj)
             % Loads default parameters and sends them to the device
             obj.VoltageRange  = {1,obj.ValidRanges{1}};
-            obj.SamplingRate = 1000;%
+            obj.SamplingRate = 1000;
             obj.ActiveChannels = 1:obj.nChannels;            
             obj.Thresholds = [(1:8)', zeros(obj.nChannels,1)];
             obj.ResetValues = [(1:8)', zeros(obj.nChannels,1)];
@@ -97,22 +100,15 @@ classdef BpodAnalogIn < handle
             end
             
             SamplingPeriodMicroseconds = (1/sf)*1000000;
-            obj.Port.write(uint8([213 75]), 'uint8', SamplingPeriodMicroseconds,'uint32');
+            obj.Port.write(uint8([213 80]), 'uint8', SamplingPeriodMicroseconds,'uint32');
             obj.SamplingRate = sf;
             
-%             if sf > 100000
-%                 obj.maxSimultaneousChannels = 1;
-%             elseif sf > 75000
-%                 obj.maxSimultaneousChannels = 2;
-%             elseif sf > 50000
-%                 obj.maxSimultaneousChannels = 3;
-%             else
-%                 obj.maxSimultaneousChannels = 4;
-%             end 
         end
         
-        function set.ActiveChannels(obj, activechan)
-        
+        function set.ActiveChannels(obj, channels)
+            % Expects a list of channel indices, i.e. [1 2 3 8]
+            
+            activechan = obj.HardwareChannelMapping(channels);
             if size(activechan,2)>obj.nChannels
                 error(['ActiveChannels must be a vector of size smaller than ' num2str(obj.nChannels)]);
             end
@@ -126,7 +122,7 @@ classdef BpodAnalogIn < handle
             end
 
             ActiveChannelsByte = auxbyte;
-            obj.Port.write(uint8([213 82 ActiveChannelsByte]), 'uint8');
+            obj.Port.write(uint8([213 65 ActiveChannelsByte]), 'uint8');
             
             Confirmed = obj.Port.read(1, 'uint8');
             if Confirmed ~= 1
@@ -154,25 +150,27 @@ classdef BpodAnalogIn < handle
                 end
                 VoltageRangeIndex(Channels) = RangeIndex;
             end
-                
-            auxbyte1=0;
-            auxbyte2=0;
-            for i=1:length(Channels)
-                if i<5
-                    auxbyte1 = bitor((VoltageRangeIndex(i)-1)*2^(2*(4-i)),auxbyte1);
-                else
-                    auxbyte2 = bitor((VoltageRangeIndex(i)-1)*2^(2*(8-i)),auxbyte2);
-                end
-            end
 
-            VoltageRangeByte1 = auxbyte1;
-            VoltageRangeByte2 = auxbyte2;
+            %change all ranges simultaneously (same value)
+            obj.Port.write(uint8([213 82 VoltageRangeIndex-1]), 'uint8');
             
-            
-            flush(obj.Port);
-            
-            obj.Port.write(uint8([213 83 VoltageRangeByte1 VoltageRangeByte2]), 'uint8');
-            
+%             auxbyte1=0;
+%             auxbyte2=0;
+%             for i=1:length(Channels)
+%                 if i<5
+%                     auxbyte1 = bitor((VoltageRangeIndex(i)-1)*2^(2*(4-i)),auxbyte1);
+%                 else
+%                     auxbyte2 = bitor((VoltageRangeIndex(i)-1)*2^(2*(8-i)),auxbyte2);
+%                 end
+%             end
+% 
+%             VoltageRangeByte1 = auxbyte1;
+%             VoltageRangeByte2 = auxbyte2;
+%             
+%             flush(obj.Port);
+%             
+%             obj.Port.write(uint8([213 82 VoltageRangeByte1 VoltageRangeByte2]), 'uint8');
+
             obj.VoltageRange = obj.ValidRanges(ones(8,1));
             for i=1:size(value,1)
                 Channels = value{i,1}; 
@@ -183,19 +181,20 @@ classdef BpodAnalogIn < handle
                 end
                 obj.VoltageRange(Channels) = obj.ValidRanges(RangeIndex(i));
             end
+
         end
         
         function set.Thresholds(obj, value)
-            
+                        
             % Expects: [1,  5.0;...
             %           3,  -2.3;...
             %           7,  -5];
             
             Channels = value(:,1); 
+            Channels = obj.HardwareChannelMapping(Channels);
             Values = value(:,2); 
             
             % Add validation
-            % ...
             
             % Set non-mentioned channels to 0
             Thresholds = zeros(8,1);
@@ -209,7 +208,7 @@ classdef BpodAnalogIn < handle
             
             %Rescale thresholds according to voltage range.
             RawThresholds = obj.ScaleValue('toRaw',Thresholds,obj.VoltageRange);
-            obj.Port.write(uint8([213 67]), 'uint8',RawThresholds', 'uint32');
+            obj.Port.write(uint8([213 84]), 'uint8',RawThresholds', 'uint32');
             
             obj.Thresholds = zeros(8,1);
             for i=1:size(Channels)
@@ -218,6 +217,8 @@ classdef BpodAnalogIn < handle
         end
 
         function set.ResetValues(obj, value)
+            
+            % FIX channel mapping
             
             % Expects: [1,  5.0;...
             %           3,  -2.3;...
@@ -240,7 +241,7 @@ classdef BpodAnalogIn < handle
             
             %Rescale thresholds according to voltage range.
             RawResetValues = obj.ScaleValue('toRaw',ResetValues,obj.VoltageRange);
-            obj.Port.write(uint8([213 64]), 'uint8',RawResetValues', 'uint32');
+            obj.Port.write(uint8([213 66]), 'uint8',RawResetValues', 'uint32');
             
             obj.ResetValues = zeros(8,1);
             for i=1:size(Values)
@@ -253,33 +254,33 @@ classdef BpodAnalogIn < handle
             % Flush
             flush(obj.Port)
             
-            %Rescale thresholds according to voltage range.    
-            obj.Port.write(uint8([213 63 Channel]), 'uint8');
-            obj.StreamChannel = Channel;
+            MappedChannel = obj.HardwareChannelMapping(Channel);
+            obj.Port.write(uint8([213 67 MappedChannel-1]), 'uint8');
+            obj.StreamChannel = obj.HardwareChannelMapping(Channel);
         end
         
         function StartLogging(obj)
             
-            obj.Port.write(uint8([213 68]), 'uint8');
+            obj.Port.write(uint8([213 76]), 'uint8');
             
         end
         
         function StopLogging(obj)
             
-            obj.Port.write(uint8([213 68]), 'uint8');
+            obj.Port.write(uint8([213 90]), 'uint8');
             
         end
         
         function r = RetrieveData(obj)
             
-            verbose=1;
+            verbose=0;
                         
             while obj.Port.bytesAvailable>0
                 obj.Port.read(1, 'uint8');
             end
             
             % Send 'Retrieve' command to the AM
-            obj.Port.write(uint8([213 70]), 'uint8');
+            obj.Port.write(uint8([213 68]), 'uint8');
             
             % Wait for SD transmition or time out
             waiting = 1;timeout=0;TransferTimeOut = 60; tic; catchfirst=0;
@@ -296,7 +297,7 @@ classdef BpodAnalogIn < handle
                 if bytesAvailable1 == bytesAvailable2 && bytesAvailable2>0
                     waiting=0;
                 end
-                disp(toc)
+
                 if toc> TransferTimeOut
                     timeout=1;
                     disp('An transfer timeout has occurred.')
@@ -328,47 +329,61 @@ classdef BpodAnalogIn < handle
             y = nan(nActiveChannels,size(rawdata,2)/(nActiveChannels+1));
             for i=1:nActiveChannels
                 x = obj.ScaleTime(rawdata(1:nActiveChannels+1:end),obj.SamplingRate);
-                d = rawdata(i+1:nActiveChannels+1:end);
+                if i==1
+                    d = rawdata(i+1:nActiveChannels+1:end)
+                else
+                    d = rawdata(i+1:nActiveChannels+1:end);
+                end
                 zerofill = size(y,2)-size(d,2);
                 y(i,:) = obj.ScaleValue('toVolts',[d zeros(1,zerofill)],obj.VoltageRange(obj.ActiveChannels(i)));
             end
             r.x = x;
             r.y = y;
             
+            
         end
         
         function StartThresholdCrossing(obj)
-            obj.Port.write(uint8([213 76]), 'uint8');
+            obj.Port.write(uint8([213 78]), 'uint8');
         end
         
         function StopThresholdCrossing(obj)
             obj.Port.write(uint8([213 77]), 'uint8');
         end
         
-        function StartStreaming(obj,What)
+        function StartUARTstreaming(obj)
+            obj.Port.write(uint8([213 72]), 'uint8');
+        end
+        
+        function StopUARTstreaming(obj)
+            obj.Port.write(uint8([213 73]), 'uint8');
+        end
+        
+        function StartUSBstreaming(obj,What)
             
+            flush(obj.Port);
             switch 1
                 case strcmp(What,'Signal')
-                    obj.Port.write(uint8([213 61]), 'uint8');
+                    obj.Port.write(uint8([213 83]), 'uint8');
                 case strcmp(What,'Events')
-                    obj.Port.write(uint8([213 65]), 'uint8');
+                    obj.Port.write(uint8([213 69]), 'uint8');
                 otherwise
-                    error('StartStreaming method needs an argument: Signal or Events.')
+                    error('StartUSBstreaming method needs an argument: Signal or Events.')
             end
         end
         
-        function StopStreaming(obj,varargin)
+        function StopUSBstreaming(obj,varargin)
             
             switch 1
                 case isempty(varargin)
-                    obj.Port.write(uint8([213 62]), 'uint8');
-                    obj.Port.write(uint8([213 66]), 'uint8');
+                    obj.Port.write(uint8([213 88]), 'uint8');
+                    obj.Port.write(uint8([213 89]), 'uint8');
                     
                 case strcmp(varargin,'Signal')
-                    obj.Port.write(uint8([213 62]), 'uint8');
+                    obj.Port.write(uint8([213 88]), 'uint8');
                     
                 case strcmp(varargin,'Events')
-                    obj.Port.write(uint8([213 66]), 'uint8');
+                    obj.Port.write(uint8([213 89]), 'uint8');
             end
         end
         
@@ -383,7 +398,9 @@ classdef BpodAnalogIn < handle
 
         % Method defined in a separate file
         h = Streamer(obj);
-        h = Plot(obj);
+        h = AinPlot(obj, AxesHandle, Action, varargin)
+        S = ControlPanel(obj, varargin)
+        
     end
     
     methods (Access = private)
@@ -514,8 +531,8 @@ classdef BpodAnalogIn < handle
                     case 1 %'-10V - 10V'
                         switch Action
                             case 'toVolts'
-                                ValueOut(i,:) = double(ValueIn(i,:)) * 20/2^13 - 10.0 - 0.022;
-                                %ValueOut(i,:) = 0.001229195496673*double(ValueIn(i,:)) - 10.010878719261370;
+                                ValueOut(i,:) = double(ValueIn(i,:)) * 0.002455851742364 -10.091771492112841;
+                                %ValueOut(i,:) = ValueIn(i,:);
                             case 'toRaw'
                                 ValueOut(i,:) = uint32((ValueIn(i,:)+10.0)*2^13/20);
                         end
