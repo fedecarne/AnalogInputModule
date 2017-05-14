@@ -1,42 +1,45 @@
-function Example1
+function AnalogTesting3
 
 %%%
-% Test Start logging at the begining of each trial and retrieving the data
-% at the end. The start logging command is sent via USB from the master
-% computer.
+% Test detect thresholds and produce events
 %%%
 
 global BpodSystem
-
-Ain = BpodAnalogIn('COM39');
-
 MaxTrials = 10000;
+%% Define parameters
+global AnalogModuleSystem
 
-BpodSystem.ProtocolFigures.AnalogModuleFig = figure('Position', [1400 700 500 300],'name','Analog Input Module','numbertitle','off', 'MenuBar', 'none', 'Resize', 'off');
-BpodSystem.GUIHandles.AnalogModulePlot = axes('Position', [.12 .17 .83 .77]);
+% Initialize Analog Module connection
+AnalogModule;
 
-Ain.AinPlot(BpodSystem.GUIHandles.AnalogModulePlot,'init');
+while AnalogModuleSystem.SerialPort.bytesAvailable>0
+    AnalogModuleSystem.SerialPort.read(1, 'uint8');
+end
 
-AMControl = Ain.ControlPanel('init');
+AMControl = AnalogModuleControl('init');
 
-S = Ain.ControlPanel('retrieve',AMControl);
+S = AnalogModuleControl('retrieve',AMControl);
 
-Ain.SamplingRate = S.SamplingRate;
-Ain.ActiveChannels = S.ActiveChannels;
-Ain.VoltageRange = S.VoltageRange;
+ProgramAnalogModuleParam('SamplingPeriod', S.SamplingPeriod);%Sampling period 100ms
+ProgramAnalogModuleParam('ActiveChannels', S.ActiveChannels);
+ProgramAnalogModuleParam('VoltageRange', S.ActiveChannels,S.VoltageRange(S.ActiveChannels)); %Voltge Range: -10V - +10V
+ProgramAnalogModuleParam('Thresholds',S.ActiveChannels,S.Thresholds); %Thresholds in Volts
+ProgramAnalogModuleParam('ResetValues',S.ActiveChannels,S.ResetValues); %Thresholds in Volts
 
 StimTime = 1;
 
+ThresholdCrossing('Start');
 %% Main trial loop
 for currentTrial = 1:MaxTrials
-   
-    S = Ain.ControlPanel('retrieve',AMControl);
-    Ain.SamplingRate = S.SamplingRate;%Sampling period 100ms
-    Ain.ActiveChannels = S.ActiveChannels;
-    Ain.VoltageRange = S.VoltageRange;
-   
-    % Assemble state matrix
-    sma = NewStateMatrix(); 
+
+    S = AnalogModuleControl('retrieve',AMControl);
+    ProgramAnalogModuleParam('SamplingPeriod', S.SamplingPeriod);%Sampling period 100ms
+    ProgramAnalogModuleParam('ActiveChannels', S.ActiveChannels);
+    ProgramAnalogModuleParam('VoltageRange', S.ActiveChannels,S.VoltageRange(S.ActiveChannels)); %Voltge Range: -10V - +10V
+    ProgramAnalogModuleParam('Thresholds',S.ActiveChannels,S.Thresholds); %Thresholds in Volts
+    ProgramAnalogModuleParam('ResetValues',S.ActiveChannels,S.ResetValues); %Thresholds in Volts
+
+    sma = NewStateMatrix(); % Assemble state matrix
     sma = AddState(sma, 'Name', 'WaitForPoke', ...
         'Timer', 0,...
         'StateChangeConditions', {'Port1In', 'Delay'},...
@@ -51,7 +54,7 @@ for currentTrial = 1:MaxTrials
         'OutputActions', {'LED', 1});
     sma = AddState(sma, 'Name', 'WaitForResponse', ...
         'Timer', 0.2,...
-        'StateChangeConditions', {'Port1Out', 'Reward'},...
+        'StateChangeConditions', {'Port1Out', 'Reward','Serial1_8','Reward'},...
         'OutputActions', {});
     sma = AddState(sma, 'Name', 'EarlyWithdrawal', ...
         'Timer', 0.2,...
@@ -65,17 +68,16 @@ for currentTrial = 1:MaxTrials
         'Timer', 1,...
         'StateChangeConditions', {'Tup', 'exit'},...
         'OutputActions', {}); 
-    Ain.StartLogging;
     SendStateMatrix(sma);
     RawEvents = RunStateMatrix;
+    
+    %ThresholdCrossing('Stop');
+    
     if ~isempty(fieldnames(RawEvents)) % If trial data was returned
-        data = Ain.RetrieveData;
-        if ~isempty(data)
-            Ain.AinPlot(BpodSystem.GUIHandles.AnalogModulePlot,'update',data);
-        end
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data
         BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
-        SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file 
+        SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
+        BpodSystem.Data.RawEvents.Trial{1, currentTrial}.Events  
     end
     HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
     if BpodSystem.Status.BeingUsed == 0
