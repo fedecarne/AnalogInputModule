@@ -19,10 +19,9 @@ BpodSystem.GUIHandles.AnalogModulePlot = axes('Position', [.12 .17 .83 .77]);
 Ain.AinPlot(BpodSystem.GUIHandles.AnalogModulePlot,'init');
 
 AMControl = Ain.ControlPanel('init');
-
 S = Ain.ControlPanel('retrieve',AMControl);
 
-Ain.SamplingRate = 1000;
+Ain.SamplingRate = 100;
 Ain.ActiveChannels = S.ActiveChannels;
 Ain.VoltageRange = S.VoltageRange;
 
@@ -72,14 +71,15 @@ for currentTrial = 1:MaxTrials
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data
         BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
         SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
-        
-        t1 = BpodSystem.Data.RawEvents.Trial{1, currentTrial}.States.DeliverStimulus(1)       
-        t2 = BpodSystem.Data.RawEvents.Trial{1, currentTrial}.Events.AnlgLoopIn1_1
-        
-        disp(['DeliverStimulus: ' num2str(t1)])
-        disp(['StartLogging: ' num2str(t2)])
-        disp(['Diff: ' num2str(t2-t1)])
-        
+        try
+            t1 = BpodSystem.Data.RawEvents.Trial{1, currentTrial}.States.DeliverStimulus(1);    
+            t2 = BpodSystem.Data.RawEvents.Trial{1, currentTrial}.Events.AnlgLoopIn1_1;
+
+            disp(['DeliverStimulus: ' num2str(t1)])
+            disp(['StartLogging: ' num2str(t2)])
+            disp(['Diff: ' num2str(t2-t1)])
+        catch
+        end
         data = Ain.RetrieveData;
         if ~isempty(data)
             Ain.AinPlot(BpodSystem.GUIHandles.AnalogModulePlot,'update',data);

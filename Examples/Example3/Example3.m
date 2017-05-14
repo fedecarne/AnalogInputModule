@@ -5,40 +5,35 @@ function AnalogTesting3
 %%%
 
 global BpodSystem
+
+
+Ain = BpodAnalogIn('COM39');
+
 MaxTrials = 10000;
-%% Define parameters
-global AnalogModuleSystem
 
-% Initialize Analog Module connection
-AnalogModule;
+BpodSystem.ProtocolFigures.AnalogModuleFig = figure('Position', [1400 700 500 300],'name','Analog Input Module','numbertitle','off', 'MenuBar', 'none', 'Resize', 'off');
+BpodSystem.GUIHandles.AnalogModulePlot = axes('Position', [.12 .17 .83 .77]);
 
-while AnalogModuleSystem.SerialPort.bytesAvailable>0
-    AnalogModuleSystem.SerialPort.read(1, 'uint8');
-end
+Ain.AinPlot(BpodSystem.GUIHandles.AnalogModulePlot,'init');
 
-AMControl = AnalogModuleControl('init');
+AMControl = Ain.ControlPanel('init');
+S = Ain.ControlPanel('retrieve',AMControl);
 
-S = AnalogModuleControl('retrieve',AMControl);
-
-ProgramAnalogModuleParam('SamplingPeriod', S.SamplingPeriod);%Sampling period 100ms
-ProgramAnalogModuleParam('ActiveChannels', S.ActiveChannels);
-ProgramAnalogModuleParam('VoltageRange', S.ActiveChannels,S.VoltageRange(S.ActiveChannels)); %Voltge Range: -10V - +10V
-ProgramAnalogModuleParam('Thresholds',S.ActiveChannels,S.Thresholds); %Thresholds in Volts
-ProgramAnalogModuleParam('ResetValues',S.ActiveChannels,S.ResetValues); %Thresholds in Volts
+Ain.SamplingRate = 100;
+Ain.ActiveChannels = S.ActiveChannels;
+Ain.VoltageRange = S.VoltageRange;
 
 StimTime = 1;
 
-ThresholdCrossing('Start');
+Ain.StartThresholdCrossing
 %% Main trial loop
 for currentTrial = 1:MaxTrials
 
-    S = AnalogModuleControl('retrieve',AMControl);
-    ProgramAnalogModuleParam('SamplingPeriod', S.SamplingPeriod);%Sampling period 100ms
-    ProgramAnalogModuleParam('ActiveChannels', S.ActiveChannels);
-    ProgramAnalogModuleParam('VoltageRange', S.ActiveChannels,S.VoltageRange(S.ActiveChannels)); %Voltge Range: -10V - +10V
-    ProgramAnalogModuleParam('Thresholds',S.ActiveChannels,S.Thresholds); %Thresholds in Volts
-    ProgramAnalogModuleParam('ResetValues',S.ActiveChannels,S.ResetValues); %Thresholds in Volts
-
+    S = Ain.ControlPanel('retrieve',AMControl);
+    Ain.SamplingRate = S.SamplingRate;%Sampling period 100ms
+    Ain.ActiveChannels = S.ActiveChannels;
+    Ain.VoltageRange = S.VoltageRange;
+    
     sma = NewStateMatrix(); % Assemble state matrix
     sma = AddState(sma, 'Name', 'WaitForPoke', ...
         'Timer', 0,...
@@ -70,8 +65,6 @@ for currentTrial = 1:MaxTrials
         'OutputActions', {}); 
     SendStateMatrix(sma);
     RawEvents = RunStateMatrix;
-    
-    %ThresholdCrossing('Stop');
     
     if ~isempty(fieldnames(RawEvents)) % If trial data was returned
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data

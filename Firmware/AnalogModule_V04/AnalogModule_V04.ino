@@ -237,13 +237,13 @@ void handler(void) {
       } break;
   
       case 'L': { // Start logging data
+        Serial1COM.writeChar(1); // Send start logging flag to bpod
         StartLogData();   
-        Serial1COM.writeChar(1); // Send start logging flag to bpod 
       } break;
         
       case 'Z': { // Stop  logging data
-        StopLogData();
         Serial1COM.writeChar(2); // Send start logging flag to bpod 
+        StopLogData();
       } break;
   
       case 'D': { // Read SD card and send data 
