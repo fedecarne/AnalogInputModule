@@ -22,7 +22,7 @@ AMControl = Ain.ControlPanel('init');
 
 S = Ain.ControlPanel('retrieve',AMControl);
 
-Ain.SamplingRate = 1000;
+Ain.SamplingRate = 10000;
 Ain.ActiveChannels = S.ActiveChannels;
 Ain.VoltageRange = S.VoltageRange;
 
@@ -32,7 +32,7 @@ StimTime = 1;
 for currentTrial = 1:MaxTrials
    
     S = Ain.ControlPanel('retrieve',AMControl);
-    %Ain.SamplingRate = S.SamplingRate;%Sampling period 100ms
+    Ain.SamplingRate = S.SamplingRate;%Sampling period 100ms
     Ain.ActiveChannels = S.ActiveChannels;
     Ain.VoltageRange = S.VoltageRange;
     
@@ -77,8 +77,7 @@ for currentTrial = 1:MaxTrials
         t2 = BpodSystem.Data.RawEvents.Trial{1, currentTrial}.Events.AnlgLoopIn1_1
         
         disp(['DeliverStimulus: ' num2str(t1)])
-        disp(['StartLogging: ' num2str(t2)])
-        disp(['Diff: ' num2str(t2-t1)])
+        t2 = disp('StartLogging: ')
         
         data = Ain.RetrieveData;
         if ~isempty(data)

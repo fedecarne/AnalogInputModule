@@ -238,10 +238,12 @@ void handler(void) {
   
       case 'L': { // Start logging data
         StartLogData();   
+        Serial1COM.writeChar(1); // Send start logging flag to bpod 
       } break;
         
       case 'Z': { // Stop  logging data
         StopLogData();
+        Serial1COM.writeChar(2); // Send start logging flag to bpod 
       } break;
   
       case 'D': { // Read SD card and send data 
@@ -412,7 +414,6 @@ void LogData(unsigned long SystemTime, unsigned short data[]){
 void StartLogData() {
   
     LoggingDataToSD = 1;
-    Serial1COM.writeByte(9); // Send start logging flag to bpod  
     
 //            //Find an unused file name.
 //            while (sd.exists(fileName)) {
