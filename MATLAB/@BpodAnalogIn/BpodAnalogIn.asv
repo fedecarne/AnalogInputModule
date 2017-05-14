@@ -149,7 +149,7 @@ classdef BpodAnalogIn < handle
                     error(['Invalid range specified: ' RangeString '. Valid ranges are: ' obj.ValidRanges]);
                 end
                 %VoltageRangeIndex(Channels) = RangeIndex;
-                VoltageRangeIndex(obj.HardwareChannelMapping(Channels)) = RangeIndex;
+                VoltageRangeIndex(Channels) = RangeIndex;
             end
 
             %change all ranges simultaneously (same value)
@@ -180,7 +180,7 @@ classdef BpodAnalogIn < handle
                 if isempty(RangeIndex)
                     error(['Invalid range specified: ' RangeString '. Valid ranges are: ' obj.ValidRanges]);
                 end
-                obj.VoltageRange(obj.HardwareChannelMapping(Channels)) = obj.ValidRanges(RangeIndex);
+                obj.VoltageRange(Channels) = obj.ValidRanges(RangeIndex);
             end
 
         end

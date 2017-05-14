@@ -1,4 +1,4 @@
-function AnalogTesting1
+function Example1
 
 %%%
 % Test Start logging at the begining of each trial and retrieving the data
@@ -23,7 +23,7 @@ S = Ain.ControlPanel('retrieve',AMControl);
 
 Ain.SamplingRate = S.SamplingRate;
 Ain.ActiveChannels = S.ActiveChannels;
-Ain.VoltageRange ={1:8,'-10V:10V'};
+Ain.VoltageRange = S.VoltageRange;
 
 StimTime = 1;
 
@@ -33,9 +33,7 @@ for currentTrial = 1:MaxTrials
     S = Ain.ControlPanel('retrieve',AMControl);
     Ain.SamplingRate = S.SamplingRate;%Sampling period 100ms
     Ain.ActiveChannels = S.ActiveChannels;
-
-    %%%%
-    Ain.VoltageRange ={1:8,'-10V:10V'};
+    Ain.VoltageRange = S.VoltageRange;
 
 
     Ain.StartLogging;

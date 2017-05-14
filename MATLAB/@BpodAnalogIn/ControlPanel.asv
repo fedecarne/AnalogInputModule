@@ -51,7 +51,7 @@ switch Op
         for i=1:8
             AMControl.VoltageRange.Channel(i) = uicontrol(AMControl.VoltageRange.ButtonGroup,...
                                                         'Style','popupmenu',...
-                                                        'String',{'-10V,10V','-5V,+5V','-2.5V,2.5V','0V,10V'},...
+                                                        'String',{'-10V,10V','-2.5V,2.5V','-5V,+5V','0V,10V'},...
                                                         'Position',[20 185-i*deltaY 80 20]);
         end
         
@@ -80,12 +80,12 @@ switch Op
         AMControl = varargin{1};
         
         S.ActiveChannels = find(cell2mat(get( AMControl.ActiveChannels.Channel, 'Value')))';
-        vranges = {};
+        vranges = {}
         for i=1:4
-            vranges{i,1}=[find([AMControl.VoltageRange.Channel.Value]==i)];
-            vranges(i,2)=obj.ValidRanges(1,i);
+            vranges{1,2*i-1}=[find([AMControl.VoltageRange.Channel.Value]==i)]
+            vranges{1,2*i}=obj.ValidRanges(1,AMControl.VoltageRange.Channel.Value)
         end
-        S.VoltageRange = vranges;
+        
         S.Thresholds = str2num(char(get( AMControl.Thresholds.Channel, 'String')));
         S.ResetValues = str2num(char(get( AMControl.ResetValues.Channel, 'String')));
         S.SamplingRate = str2double(AMControl.SamplingRate.Edit.String);
