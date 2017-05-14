@@ -323,17 +323,15 @@ classdef BpodAnalogIn < handle
             end
             
             t=toc(tStart);
-            disp(['Reading time: ' num2str(t) 's.']);
+            if verbose
+                disp(['Reading time: ' num2str(t) 's.']);
+            end
             
             nActiveChannels = size(obj.ActiveChannels,2);
             y = nan(nActiveChannels,size(rawdata,2)/(nActiveChannels+1));
             for i=1:nActiveChannels
                 x = obj.ScaleTime(rawdata(1:nActiveChannels+1:end),obj.SamplingRate);
-                if i==1
-                    d = rawdata(i+1:nActiveChannels+1:end)
-                else
-                    d = rawdata(i+1:nActiveChannels+1:end);
-                end
+                d = rawdata(i+1:nActiveChannels+1:end);
                 zerofill = size(y,2)-size(d,2);
                 y(i,:) = obj.ScaleValue('toVolts',[d zeros(1,zerofill)],obj.VoltageRange(obj.ActiveChannels(i)));
             end

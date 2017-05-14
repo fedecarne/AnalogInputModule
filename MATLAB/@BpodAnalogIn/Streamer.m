@@ -404,7 +404,6 @@ function timerCallback(~,~,Tab,obj)
     ts = tic;
     if obj.Port.bytesAvailable>8
         obj.GUIhandles.Message_txt.String =  'Too fast...';
-        disp(obj.Port.bytesAvailable)
     else
         obj.GUIhandles.Message_txt.String =  '';
     end
@@ -420,7 +419,6 @@ function timerCallback(~,~,Tab,obj)
                 obj.GUIhandles.T = obj.GUIhandles.T + 1/obj.GUIhandles.SamplingRate;
                 
                 % Read new byte
-                obj.Port.read(1, 'uint16')
                 a = obj.ScaleValue('toVolts',obj.Port.read(1, 'uint16'),obj.ValidRanges(obj.GUIhandles.SelectedRange));
                 
                 % Sweep like osciloscope

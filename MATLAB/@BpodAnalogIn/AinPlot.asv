@@ -23,7 +23,7 @@ switch Action
         AxesHandle.XLabel.String = 'Time (s)';
         grid(AxesHandle,'on');
         
-        c = colormap(lines(8));
+        c = colormap(jet(8));
         for i=1:8
             BpodSystem.GUIHandles.ChannelPlot(i) = line(nan,nan,...
                 'LineStyle','-',...
@@ -53,14 +53,12 @@ switch Action
                 set(BpodSystem.GUIHandles.ChannelPlot(chn),'XData',xdata,'YData',ydata(i,:));
             end
             AxesHandle.XLim = [xdata(1) xdata(end)];
-            
         else
             axes(AxesHandle);
             for i=1:8
                 set(BpodSystem.GUIHandles.ChannelPlot(i),'XData',nan,'YData',nan);
             end
         end
-        %AxesHandle.YLim = [AxesHandle.YLim(1)-1 AxesHandle.YLim(2)+1];
 end
 
 
