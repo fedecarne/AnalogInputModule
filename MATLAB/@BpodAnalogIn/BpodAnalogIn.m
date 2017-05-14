@@ -316,12 +316,14 @@ classdef BpodAnalogIn < handle
             
             tStart = tic;
             
-            i=0;
-            rawdata = nan(1,obj.Port.bytesAvailable/4);
-            while obj.Port.bytesAvailable>3
-                i=i+1;
-                rawdata(1,i) = obj.Port.read(1, 'uint32');
-            end
+%             i=0;
+%             rawdata = nan(1,obj.Port.bytesAvailable/4);
+%             while obj.Port.bytesAvailable>3
+%                 i=i+1;
+%                 rawdata(1,i) = obj.Port.read(1, 'uint32');
+%             end
+            n = obj.Port.bytesAvailable/4;
+            rawdata = double(obj.Port.read(n, 'uint32'));
             
             t=toc(tStart);
             if verbose
@@ -338,8 +340,7 @@ classdef BpodAnalogIn < handle
             end
             r.x = x;
             r.y = y;
-            
-            
+
         end
         
         function StartThresholdCrossing(obj)

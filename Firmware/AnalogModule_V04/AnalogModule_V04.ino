@@ -38,7 +38,7 @@ ArCOM Serial2COM(Serial2);
 byte DebugPin = 18; // Teensy LED
 
 // System objects
-SPISettings ADCSettings(300000, MSBFIRST, SPI_MODE2);
+SPISettings ADCSettings(10000000, MSBFIRST, SPI_MODE2);
 IntervalTimer hardwareTimer; // Hardware timer to ensure even sampling
 File DataFile; // File on microSD card, to store waveform data
 

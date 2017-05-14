@@ -27,6 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <SPI.h>
 #include "AD7327.h"
 
+int SPI_speed = 10000000;
+
 AD7327::AD7327(byte ADCChipSelect) {
 
   ChipSelect = ADCChipSelect;
@@ -58,14 +60,14 @@ uint16_t AD7327::readOneChannel(byte Channel) {
 
   noInterrupts(); // disable interupts to prepare to send address data to the ADC.
 
-  SPI.beginTransaction(SPISettings(30000000, MSBFIRST, SPI_MODE2));
+  SPI.beginTransaction(SPISettings(SPI_speed, MSBFIRST, SPI_MODE2));
   digitalWrite(ChipSelect, LOW); // take the Chip Select pin low to select the ADC.
   SPI.transfer(adcControlRegister_byte1); //  write in the control register
   SPI.transfer(adcControlRegister_byte2); //  write in the control register
   digitalWrite(ChipSelect, HIGH); // take the Chip Select pin high to de-select the ADC.
   SPI.endTransaction();
   
-  SPI.beginTransaction(SPISettings(30000000, MSBFIRST, SPI_MODE2));
+  SPI.beginTransaction(SPISettings(SPI_speed, MSBFIRST, SPI_MODE2));
   digitalWrite(ChipSelect, LOW); // take the Chip Select pin low to select the ADC.
   byte adcDataIn_byte1 = SPI.transfer(0b00000000); // read conversion, also sending 0 as this doesn't matter.
   byte adcDataIn_byte2 = SPI.transfer(0b00000000); // read conversion, also sending 0 as this doesn't matter.
@@ -87,7 +89,7 @@ void AD7327::readActiveChannels(short unsigned *pdata, byte nActiveChannels){
   
   for (int i=0; i < nActiveChannels; i++){
     
-    SPI.beginTransaction(SPISettings(30000000, MSBFIRST, SPI_MODE2));
+    SPI.beginTransaction(SPISettings(SPI_speed, MSBFIRST, SPI_MODE2));
     digitalWrite(ChipSelect, LOW); // take the Chip Select pin low to select the ADC.
     byte adcDataIn_byte1 = SPI.transfer(0b00000000); // read conversion, also sending 0 as this doesn't matter.
     byte adcDataIn_byte2 = SPI.transfer(0b00000000); // read conversion, also sending 0 as this doesn't matter.
@@ -117,7 +119,7 @@ void AD7327::programADC(word ControlData, word SequenceData, word Range1Data, wo
   noInterrupts(); // disable interupts to prepare to send address data to the ADC.
 
   if (Range1Data !=0){
-    SPI.beginTransaction(SPISettings(30000000, MSBFIRST, SPI_MODE2));
+    SPI.beginTransaction(SPISettings(SPI_speed, MSBFIRST, SPI_MODE2));
     digitalWrite(ChipSelect, LOW);
     SPI.transfer(highByte(Range1Data));
     SPI.transfer(lowByte(Range1Data));
@@ -126,7 +128,7 @@ void AD7327::programADC(word ControlData, word SequenceData, word Range1Data, wo
   }
 
   if (Range2Data !=0){
-    SPI.beginTransaction(SPISettings(30000000, MSBFIRST, SPI_MODE2));
+    SPI.beginTransaction(SPISettings(SPI_speed, MSBFIRST, SPI_MODE2));
     digitalWrite(ChipSelect, LOW);
     SPI.transfer(highByte(Range2Data));
     SPI.transfer(lowByte(Range2Data));
@@ -135,7 +137,7 @@ void AD7327::programADC(word ControlData, word SequenceData, word Range1Data, wo
   }
 
   if (SequenceData !=0){
-    SPI.beginTransaction(SPISettings(30000000, MSBFIRST, SPI_MODE2));
+    SPI.beginTransaction(SPISettings(SPI_speed, MSBFIRST, SPI_MODE2));
     digitalWrite(ChipSelect, LOW);
     SPI.transfer(highByte(SequenceData));
     SPI.transfer(lowByte(SequenceData));
@@ -144,7 +146,7 @@ void AD7327::programADC(word ControlData, word SequenceData, word Range1Data, wo
   }
 
   if (ControlData !=0){
-    SPI.beginTransaction(SPISettings(30000000, MSBFIRST, SPI_MODE2));
+    SPI.beginTransaction(SPISettings(SPI_speed, MSBFIRST, SPI_MODE2));
     digitalWrite(ChipSelect, LOW);
     SPI.transfer(highByte(ControlData));
     SPI.transfer(lowByte(ControlData));

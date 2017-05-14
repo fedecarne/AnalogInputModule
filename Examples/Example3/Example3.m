@@ -1,4 +1,4 @@
-function AnalogTesting3
+function Example3
 
 %%%
 % Test detect thresholds and produce events

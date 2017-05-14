@@ -2,19 +2,20 @@ clear all -g
 close all
 
 % Connect whith AnalogIn Module
+Ain.delete
 Ain = BpodAnalogIn('COM39');
 Ain.ActiveChannels = 1;
-Ain.SamplingRate = 2000;
+Ain.SamplingRate = 100000;
 Ain.VoltageRange = {1:8, '-10V:10V'};
 
 % Connect with Bpod Wave Generator
 WaveGen = BpodWavePlayer('COM36');
 WaveGen.TriggerMode = 'Normal';
-WaveGen.SamplingRate = 40000;
+WaveGen.SamplingRate = 50000;
 WaveGen.OutputRange = '-10V:10V';
 
 % Load waveform
-Duration = 1;
+Duration = 1.5;
 Frequency = 100;
 Amplitude = 10;
 ChannelToTest = 1;
@@ -28,12 +29,14 @@ close all
 %% Run
 WaveGen.play(1,1);
 Ain.StartLogging;
-pause(Duration-0.1) % stop logging before waveform finishes
+pause(Duration) % stop logging before waveform finishes
 data = Ain.RetrieveData;
     
 %%
 xdata = data.x;
 ydata = data.y;
+plot(xdata,ydata)
+xdata(end)
 
 initial_delay = 0.100; %in ms
 y = ydata(1,ceil(initial_delay*Ain.SamplingRate):end);
