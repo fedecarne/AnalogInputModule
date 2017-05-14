@@ -33,5 +33,5 @@ To get started:
 
 	Ain.Streamer
 
-Check the [documentation]. (https://www.google.com) 
+Check the [documentation](https://sites.google.com/site/bpodanaloginmodule/analog-input-module).
 
