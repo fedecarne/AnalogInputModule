@@ -343,6 +343,71 @@ classdef BpodAnalogIn < handle
 
         end
         
+        function r = RetrieveData2(obj)
+            
+            verbose=0;
+                        
+            while obj.Port.bytesAvailable>0
+                obj.Port.read(1, 'uint8');
+            end
+            
+            % Send 'Retrieve' command to the AM
+            obj.Port.write(uint8([213 68]), 'uint8');
+            
+            % Wait for SD transmition or time out
+            waiting = 1;timeout=0;TransferTimeOut = 60; tic; catchfirst=0;
+            while waiting
+                
+                if obj.Port.bytesAvailable>0 && catchfirst==0
+                    tStart = tic;
+                    catchfirst = 1;
+                end
+                
+                bytesAvailable1 = obj.Port.bytesAvailable;
+                pause(0.2);
+                bytesAvailable2 = obj.Port.bytesAvailable;
+                if bytesAvailable1 == bytesAvailable2 && bytesAvailable2>0
+                    waiting=0;
+                end
+
+                if toc> TransferTimeOut
+                    timeout=1;
+                    disp('An transfer timeout has occurred.')
+                    r =[];
+                    return
+                end
+            end
+                       
+            t=toc(tStart);
+            if verbose
+                disp('---------------');
+                disp(['N bytes: ' num2str(obj.Port.bytesAvailable)]);
+                disp(['Transfering time: ' num2str(t) 's.']);
+            end
+            
+            tStart = tic;
+            
+            n = obj.Port.bytesAvailable/2;
+            rawdata = double(obj.Port.read(n, 'uint16'));
+            
+            t=toc(tStart);
+            if verbose
+                disp(['Reading time: ' num2str(t) 's.']);
+            end
+            
+            nActiveChannels = size(obj.ActiveChannels,2);
+            y = nan(nActiveChannels,size(rawdata,2)/(nActiveChannels));
+            for i=1:nActiveChannels
+                %x = obj.ScaleTime(rawdata(1:nActiveChannels+1:end),obj.SamplingRate);
+                d = rawdata(i:nActiveChannels:end);
+                zerofill = size(y,2)-size(d,2);
+                y(i,:) = obj.ScaleValue('toVolts',[d zeros(1,zerofill)],obj.VoltageRange(obj.ActiveChannels(i)));
+            end
+            r.x = (1:size(y,2))./obj.SamplingRate;
+            r.y = y;
+
+        end
+        
         function StartThresholdCrossing(obj)
             obj.Port.write(uint8([213 78]), 'uint8');
         end

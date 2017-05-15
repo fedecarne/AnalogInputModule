@@ -249,7 +249,7 @@ void handler(void) {
       case 'D': { // Read SD card and send data 
         
         LoggingDataToSD = 0;
-        SystemTime = 0;
+        //SystemTime = 0;
         
         DataFile.close();
   
@@ -258,8 +258,10 @@ void handler(void) {
         DataFile.seekSet(0);
   
         while (DataFile.available() > 0) {
-            d0 = readLongFromSD();
-            USBCOM.writeUint32(d0);
+            //d0 = readLongFromSD();
+            //USBCOM.writeUint32(d0);
+            d0 = readShortFromSD();
+            USBCOM.writeUint16(d0);
         }
         DataFile.close();
         
@@ -317,13 +319,14 @@ void handler(void) {
   if ((LoggingDataToSD == 1) || (SendingEventsToBpod==1) || (SendingDataToSerial==1))  {
 
     // Increase time one step
-    SystemTime++;
+    //SystemTime++;
     
     // Read active channels
     readActiveChannels(&data[0], nActiveChannels);
 
     if (LoggingDataToSD == 1){
-      LogData(SystemTime,data);
+      //LogData(SystemTime,data);
+      LogData(data);
     }
     
     if (SendingEventsToBpod == 1){
@@ -396,16 +399,19 @@ void SendDataToSerial(unsigned short data[]){
 
 
 // Log data
-void LogData(unsigned long SystemTime, unsigned short data[]){
+//void LogData(unsigned long SystemTime, unsigned short data[]){
+void LogData(unsigned short data[]){
   
   //Write System Time to SD
-  breakLong(SystemTime); 
-  writeLong2SD(); //Log time from logging start
+  //breakLong(SystemTime); 
+  //writeLong2SD(); //Log time from logging start
   
   //Write data to SD
   for (int i = 0; i < nActiveChannels; i++) {
-    breakLong(data[i]); 
-    writeLong2SD();   
+    //breakLong(data[i]); 
+    //writeLong2SD();   
+    breakShort(data[i]); 
+    writeShort2SD();   
   }
 }
 
