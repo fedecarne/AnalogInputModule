@@ -30,7 +30,7 @@ close all
 WaveGen.play(1,1);
 Ain.StartLogging;
 pause(Duration-0.5) % stop logging before waveform finishes
-data = Ain.RetrieveData2;
+data = Ain.RetrieveData;
     
 %%
 xdata = data.x;

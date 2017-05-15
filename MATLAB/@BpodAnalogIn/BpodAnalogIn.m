@@ -272,7 +272,7 @@ classdef BpodAnalogIn < handle
             
         end
         
-        function r = RetrieveData(obj)
+        function r = RetrieveDataOLD(obj)
             
             verbose=0;
                         
@@ -343,7 +343,7 @@ classdef BpodAnalogIn < handle
 
         end
         
-        function r = RetrieveData2(obj)
+        function r = RetrieveData(obj)
             
             verbose=0;
                         
