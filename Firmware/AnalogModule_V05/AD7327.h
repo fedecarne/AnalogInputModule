@@ -35,7 +35,7 @@ public:
   void setSequence(byte SequenceByte);
   void setRange(byte VoltageRangeArray[]);
   uint16_t readOneChannel(byte Channel);
-  void readActiveChannels(short unsigned *pdata, byte nActiveChannels);
+  void readActiveChannels(uint16_t *pdata, byte nActiveChannels);
   void programADC(word ControlData, word SequenceData, word Range1Data, word Range2Data);
 private:
   byte ChipSelect;

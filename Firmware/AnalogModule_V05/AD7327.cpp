@@ -80,7 +80,7 @@ uint16_t AD7327::readOneChannel(byte Channel) {
   
 }
 
-void AD7327::readActiveChannels(short unsigned *pdata, byte nActiveChannels){
+void AD7327::readActiveChannels(uint16_t *pdata, byte nActiveChannels){
 
   byte adcValueMask_byte1 = 0b00011111;
   byte adcValueMask_byte2 = 0b11111111;

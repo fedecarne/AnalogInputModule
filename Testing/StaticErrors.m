@@ -5,7 +5,7 @@ Ain = BpodAnalogIn('COM39');
 
 Ain.ActiveChannels = 1;
 Ain.SamplingRate = 200;
-Ain.VoltageRange = {1:8, '-10V:10V'};
+Ain.VoltageRange(1:8) = repmat({'-10V:10V'},1,8);
 
 % Connect with Bpod Wave Generator
 WaveGen = BpodWavePlayer('COM36');

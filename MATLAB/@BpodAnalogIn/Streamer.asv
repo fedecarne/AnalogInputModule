@@ -1,6 +1,8 @@
 function Streamer(obj)
 
 %Initialize obj.GUIhandles
+
+
 obj.GUIhandles.T=0;
 obj.GUIhandles.TimeWindow = 5; % in seconds
 obj.GUIhandles.TimerPeriod = 0.001;% in seconds
@@ -355,58 +357,51 @@ end
 
 function Win_edt_Callback(hObject, eventdata, handles, obj)
 
-    tw = str2double(get(hObject,'String'));
-    if ~isnan(tw) && ~tw==0
+    if !iric(str2double(get(hObject,'String')))
         obj.GUIhandles.TimeWindow = str2double(get(hObject,'String'));
         obj.GUIhandles.xpos = 0;
         obj.GUIhandles.xN = round(obj.GUIhandles.TimeWindow*obj.GUIhandles.SamplingRate);
         obj.GUIhandles.ydata = nan(1,obj.GUIhandles.xN);
     else
-        hObject.String = num2str(obj.GUIhandles.TimeWindow);
+        hObject.String = num2str(obj.GUIhandles.TimeWindow)
     end
 
 end
 
 function SamplingRate_edt_Callback(hObject, eventdata, handles, obj)
 
-    sr = str2double(get(hObject,'String'));
-    if ~isnan(sr) && ~sr==0    
-        
-        if obj.GUIhandles.Running
+    if obj.GUIhandles.Running
 
-                stop(obj.GUIhandles.timer);
+        stop(obj.GUIhandles.timer);
 
-                % Send Stop
-                obj.StopUSBstreaming;
-            end
+        % Send Stop
+        obj.StopUSBstreaming;
+    end
 
-        % Set sampling period
-        SamplingRate = sr;
-        obj.GUIhandles.SamplingRate = SamplingRate;
+    % Set sampling period
+    SamplingRate = str2double(obj.GUIhandles.SamplingRate_edt.String);
+    obj.GUIhandles.SamplingRate = SamplingRate;
     
-        flush(obj.Port)
+    flush(obj.Port)
 
-        obj.SamplingRate = SamplingRate;
+    obj.SamplingRate = SamplingRate;
+    
+    % plotting properties
+    obj.GUIhandles.xpos = 0;
+    obj.GUIhandles.xN = round(obj.GUIhandles.TimeWindow*obj.GUIhandles.SamplingRate);
+    obj.GUIhandles.ydata = nan(1,obj.GUIhandles.xN);
 
-        % plotting properties
-        obj.GUIhandles.xpos = 0;
-        obj.GUIhandles.xN = round(obj.GUIhandles.TimeWindow*obj.GUIhandles.SamplingRate);
-        obj.GUIhandles.ydata = nan(1,obj.GUIhandles.xN);
-
-        if obj.GUIhandles.Running
-
-            % Send 'Start' command to the AM
-            switch obj.GUIhandles.CurrentWindow
-                case 'Signal'
-                    obj.StartUSBstreaming('Signal');
-                case 'Events'
-                    obj.StartUSBstreaming('Events');
-            end
-
-            start(obj.GUIhandles.timer);
+    if obj.GUIhandles.Running
+        
+        % Send 'Start' command to the AM
+        switch obj.GUIhandles.CurrentWindow
+            case 'Signal'
+                obj.StartUSBstreaming('Signal');
+            case 'Events'
+                obj.StartUSBstreaming('Events');
         end
-    else
-        hObject.String = num2str(obj.SamplingRate);
+        
+        start(obj.GUIhandles.timer);
     end
 end
 
