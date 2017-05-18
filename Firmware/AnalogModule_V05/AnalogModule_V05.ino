@@ -24,7 +24,7 @@ SdFatSdioEX SD;
 #define FirmwareVersion 1
 
 // Module setup
-char moduleName[] = "AnlgLoopIn"; // Name of module for manual override UI and state machine assembler
+char moduleName[] = "AnalogIn"; // Name of module for manual override UI and state machine assembler
 
 
 AD7327 AD(39); // ADC ChipSelect

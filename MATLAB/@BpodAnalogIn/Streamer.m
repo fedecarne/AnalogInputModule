@@ -630,8 +630,6 @@ obj.GUIhandles.CurrentWindow = hObject.SelectedTab.Title;
                 % Stop reading
                 stop(obj.GUIhandles.timer);
 
-                %flush(obj.Port);
-
                 %Stop sending signal
                 obj.StopUSBstreaming('Signal');
 
@@ -664,7 +662,6 @@ obj.GUIhandles.CurrentWindow = hObject.SelectedTab.Title;
                 
                 %Reset Plot
                 set(obj.GUIhandles.Signal.Plot,'XData',[],'YData',[]);
-                %obj.GUIhandles.Running=0;
         end
     end
 end

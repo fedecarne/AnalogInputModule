@@ -74,7 +74,7 @@ classdef BpodAnalogIn < handle
             catch
                 disp('Was not able to find BpodAnalogIn module. Try disconnect and connect again.')
             end
-            obj.Port.write([obj.opMenuByte 79], 'uint8');
+            obj.Port.write([obj.opMenuByte double('O')], 'uint8');
             pause(.1);
             HandShakeOkByte = obj.Port.read(1, 'uint8');
             if HandShakeOkByte == 161
@@ -113,7 +113,7 @@ classdef BpodAnalogIn < handle
             end
             
             SamplingPeriodMicroseconds = (1/sf)*1000000;
-            obj.Port.write(uint8([213 80]), 'uint8', SamplingPeriodMicroseconds,'uint32');
+            obj.Port.write(uint8([213 double('P')]), 'uint8', SamplingPeriodMicroseconds,'uint32');
             obj.SamplingRate = sf;
             
         end
@@ -135,7 +135,7 @@ classdef BpodAnalogIn < handle
             end
 
             ActiveChannelsByte = auxbyte;
-            obj.Port.write(uint8([213 65 ActiveChannelsByte]), 'uint8');
+            obj.Port.write(uint8([213 double('A') ActiveChannelsByte]), 'uint8');
             
             Confirmed = obj.Port.read(1, 'uint8');
             if Confirmed ~= 1
@@ -160,7 +160,7 @@ classdef BpodAnalogIn < handle
                 end
                 VoltageRangeIndex(obj.HardwareChannelMapping(i)) = RangeIndex;
             end
-            obj.Port.write(uint8([213 82 VoltageRangeIndex-1]), 'uint8');
+            obj.Port.write(uint8([213 double('R') VoltageRangeIndex-1]), 'uint8');
             obj.RangeIndex = VoltageRangeIndex;
             obj.VoltageRange = value;
 
@@ -186,7 +186,7 @@ classdef BpodAnalogIn < handle
             
             %Rescale thresholds according to voltage range.
             RawThresholds = obj.ScaleValue('toRaw',Thresholds,obj.VoltageRange);
-            obj.Port.write(uint8([213 84]), 'uint8',RawThresholds', 'uint32');
+            obj.Port.write(uint8([213 double('T')]), 'uint8',RawThresholds', 'uint32');
             
             obj.Thresholds = zeros(8,1);
             for i=1:size(Channels)
@@ -217,7 +217,7 @@ classdef BpodAnalogIn < handle
             
             %Rescale thresholds according to voltage range.
             RawResetValues = obj.ScaleValue('toRaw',ResetValues,obj.VoltageRange);
-            obj.Port.write(uint8([213 66]), 'uint8',RawResetValues', 'uint32');
+            obj.Port.write(uint8([213 double('B')]), 'uint8',RawResetValues', 'uint32');
             
             obj.ResetValues = zeros(8,1);
             for i=1:size(Values)
@@ -231,19 +231,19 @@ classdef BpodAnalogIn < handle
             flush(obj.Port)
             
             MappedChannel = obj.HardwareChannelMapping(Channel);
-            obj.Port.write(uint8([213 67 MappedChannel-1]), 'uint8');
+            obj.Port.write(uint8([213 double('C') MappedChannel-1]), 'uint8');
             obj.StreamChannel = obj.HardwareChannelMapping(Channel);
         end
         
         function StartLogging(obj)
             
-            obj.Port.write(uint8([213 76]), 'uint8');
+            obj.Port.write(uint8([213 double('L')]), 'uint8');
             
         end
         
         function StopLogging(obj)
             
-            obj.Port.write(uint8([213 90]), 'uint8');
+            obj.Port.write(uint8([213 double('Z')]), 'uint8');
             
         end
 
@@ -255,7 +255,7 @@ classdef BpodAnalogIn < handle
             end
             
             % Send 'Retrieve' command to the AM
-            obj.Port.write(uint8([213 68]), 'uint8');
+            obj.Port.write(uint8([213 double('D')]), 'uint8');
             nSamples = obj.Port.read(1, 'uint32');
             nActiveChannels = size(obj.ActiveChannels,2);
             nValues = nActiveChannels*nSamples;
@@ -275,19 +275,19 @@ classdef BpodAnalogIn < handle
         end
         
         function StartThresholdCrossing(obj)
-            obj.Port.write(uint8([213 78]), 'uint8');
+            obj.Port.write(uint8([213 double('N')]), 'uint8');
         end
         
         function StopThresholdCrossing(obj)
-            obj.Port.write(uint8([213 77]), 'uint8');
+            obj.Port.write(uint8([213 double('M')]), 'uint8');
         end
         
         function StartUARTstreaming(obj)
-            obj.Port.write(uint8([213 72]), 'uint8');
+            obj.Port.write(uint8([213 double('H')]), 'uint8');
         end
         
         function StopUARTstreaming(obj)
-            obj.Port.write(uint8([213 73]), 'uint8');
+            obj.Port.write(uint8([213 double('I')]), 'uint8');
         end
         
         function StartUSBstreaming(obj,What)
@@ -295,9 +295,9 @@ classdef BpodAnalogIn < handle
             flush(obj.Port);
             switch 1
                 case strcmp(What,'Signal')
-                    obj.Port.write(uint8([213 83]), 'uint8');
+                    obj.Port.write(uint8([213 double('S')]), 'uint8');
                 case strcmp(What,'Events')
-                    obj.Port.write(uint8([213 69]), 'uint8');
+                    obj.Port.write(uint8([213 double('E')]), 'uint8');
                 otherwise
                     error('StartUSBstreaming method needs an argument: Signal or Events.')
             end
@@ -307,21 +307,21 @@ classdef BpodAnalogIn < handle
             
             switch 1
                 case isempty(varargin)
-                    obj.Port.write(uint8([213 88]), 'uint8');
-                    obj.Port.write(uint8([213 89]), 'uint8');
+                    obj.Port.write(uint8([213 double('X')]), 'uint8');
+                    obj.Port.write(uint8([213 double('Y')]), 'uint8');
                     
                 case strcmp(varargin,'Signal')
-                    obj.Port.write(uint8([213 88]), 'uint8');
+                    obj.Port.write(uint8([213 double('X')]), 'uint8');
                     
                 case strcmp(varargin,'Events')
-                    obj.Port.write(uint8([213 89]), 'uint8');
+                    obj.Port.write(uint8([213 double('Y')]), 'uint8');
             end
         end
         
         function delete(obj)
              
             %Send disconnect command
-            obj.Port.write(uint8([213 81]), 'uint8');
+            obj.Port.write(uint8([213 double('Q')]), 'uint8');
 
             obj.Port = []; % Trigger the ArCOM port's destructor function (closes and releases port)
             disp('AnalogModule successfully disconnected.')
