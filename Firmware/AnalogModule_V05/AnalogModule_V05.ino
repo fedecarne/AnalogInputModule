@@ -21,9 +21,8 @@ SdFatSdioEX SD;
 #define makeUnsignedShort(msb, lsb) ((msb << 8) | (lsb))
 #define CSV_DELIM ','
 
-#define FirmwareVersion 1
-
 // Module setup
+unsigned long FirmwareVersion = 1;
 char moduleName[] = "AnalogIn"; // Name of module for manual override UI and state machine assembler
 
 
@@ -474,7 +473,7 @@ byte StreamThresholdCrossing() {
 void returnModuleInfo() {
   Serial1COM.writeByte(65); // Acknowledge
   Serial1COM.writeUint32(FirmwareVersion); // 4-byte firmware version
-  Serial1COM.writeUint32(sizeof(moduleName) - 1); // Length of module name
+  Serial1COM.writeByte(sizeof(moduleName) - 1); // Length of module name
   Serial1COM.writeCharArray(moduleName, sizeof(moduleName) - 1); // Module name
   Serial1COM.writeByte(0);
 }
